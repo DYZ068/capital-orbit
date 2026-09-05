@@ -1,0 +1,92 @@
+name: 更新資金流資料
+
+on:
+  schedule:
+    # 美股：每 15 分鐘。cron 用 UTC，13:30–21:00 UTC 同時涵蓋夏令時與冬令時的盤中。
+    - cron: "*/15 13-21 * * 1-5"
+    # 台股：台灣時間每個工作日 16:10（= 08:10 UTC），證交所約 15:30 後公布法人資料
+    - cron: "10 8 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 手動要跑哪一邊
+        type: choice
+        default: check          # 預設只做連通性檢查，不會動到資料
+        options: [check, tw, us, both]
+
+concurrency:
+  group: flow-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    # 保險絲：整個 job 最多 10 分鐘。腳本自己有 240 秒的時限，
+    # 這一層是防止任何意外（網路卡死、相依套件出包）再度拖成好幾小時。
+    timeout-minutes: 10
+    # 沒設金鑰就整個跳過美股，免得每 15 分鐘空轉一次、白燒 Actions 額度
+    env:
+      HAS_ALPACA: ${{ secrets.ALPACA_KEY != '' && secrets.ALPACA_SECRET != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: 邏輯自我測試
+        run: |
+          python scripts/test_us.py
+          python scripts/test_alpaca_e2e.py
+
+      - name: 抓美股
+        if: |
+          env.HAS_ALPACA == 'true' && (
+            github.event.schedule == '*/15 13-21 * * 1-5' ||
+            contains(fromJSON('["both","us"]'), inputs.job)
+          )
+        timeout-minutes: 6
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          US_PROVIDER: ${{ vars.US_PROVIDER || 'alpaca' }}
+        run: python scripts/fetch_us.py
+
+      - name: 測試資料源連通性
+        if: inputs.job == 'check'
+        timeout-minutes: 3
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          US_PROVIDER: ${{ vars.US_PROVIDER || 'alpaca' }}
+        run: python scripts/fetch_us.py --check
+
+      - name: 抓台股
+        if: |
+          github.event.schedule == '10 8 * * 1-5' ||
+          contains(fromJSON('["both","tw"]'), inputs.job)
+        timeout-minutes: 5
+        run: |
+          python scripts/fetch_tw.py
+          python scripts/build_history.py --days 30
+
+      # 就算美股那步紅燈也要跑：台股的資料還是該進 repo。
+      # workflow 本身仍然是紅的，所以問題不會被藏起來。
+      - name: 有變動才 commit
+        if: ${{ !cancelled() && inputs.job != 'check' }}
+        run: |
+          git config user.name  "flow-bot"
+          git config user.email "flow-bot@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "資料沒有變化，不做 commit"
+          else
+            git commit -m "資料更新 $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

@@ -1,0 +1,575 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<title>資金流判讀手冊</title>
+<style>
+:root{
+  --paper:#F7F8FA; --raised:#FFFFFF; --sunk:#EDEFF4;
+  --ink:#141920; --ink2:#4C5666; --ink3:#7F8899;
+  --rule:#DCE1E9; --rule2:#E9ECF2;
+  --up:#C4304A; --down:#0E7A5A; --accent:#2C5FA8; --warn:#9A5B00; --unm:#6B3FA0;
+  --accent-wash:#E8EFF9; --warn-wash:#FBF2E3; --up-wash:#FAEBEE; --down-wash:#E6F3EE;
+  --serif:"Noto Serif TC",Songti TC,serif;
+  --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#101620; --raised:#161D28; --sunk:#0B1018;
+    --ink:#E6EBF3; --ink2:#A2AEC0; --ink3:#6E7A8C;
+    --rule:#25303F; --rule2:#1C2531;
+    --up:#F02040; --down:#00A87B; --accent:#4A85D8; --warn:#D69A3C; --unm:#A97BE8;
+    --accent-wash:#152238; --warn-wash:#2A2013; --up-wash:#2C1119; --down-wash:#0A2620;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101620; --raised:#161D28; --sunk:#0B1018;
+  --ink:#E6EBF3; --ink2:#A2AEC0; --ink3:#6E7A8C;
+  --rule:#25303F; --rule2:#1C2531;
+  --up:#F02040; --down:#00A87B; --accent:#4A85D8; --warn:#D69A3C; --unm:#A97BE8;
+  --accent-wash:#152238; --warn-wash:#2A2013; --up-wash:#2C1119; --down-wash:#0A2620;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.78;-webkit-font-smoothing:antialiased}
+.shell{max-width:1120px;margin:0 auto;padding:34px 22px 90px;
+  display:grid;grid-template-columns:184px minmax(0,1fr);gap:44px;align-items:start}
+main{min-width:0;max-width:70ch}
+
+/* ---------- 目次 ---------- */
+nav{position:sticky;top:26px;font-family:var(--mono);font-size:11.5px;line-height:1.5}
+nav .lbl{font-size:9.5px;letter-spacing:.24em;color:var(--ink3);text-transform:uppercase;
+  padding-bottom:9px;border-bottom:1px solid var(--rule);margin-bottom:11px}
+nav a{display:flex;gap:9px;padding:5px 0;color:var(--ink2);text-decoration:none;
+  border-left:2px solid transparent;padding-left:9px;margin-left:-11px}
+nav a:hover{color:var(--ink);border-left-color:var(--accent)}
+nav a b{color:var(--ink3);font-weight:500;flex:none;width:14px}
+
+/* ---------- 標題區 ---------- */
+.mast{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:30px}
+.kicker{font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:var(--ink3);
+  text-transform:uppercase}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(30px,5.5vw,44px);
+  letter-spacing:.05em;margin:9px 0 12px;line-height:1.18;text-wrap:balance}
+.standfirst{font-size:16px;color:var(--ink2);margin:0;max-width:60ch}
+.provenance{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:16px;
+  font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.provenance b{color:var(--ink2);font-weight:500}
+
+/* ---------- 結構 ---------- */
+section{margin-top:52px;scroll-margin-top:22px}
+h2{font-family:var(--serif);font-weight:700;font-size:24px;letter-spacing:.03em;
+  margin:0 0 4px;display:flex;align-items:baseline;gap:12px;text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500;
+  letter-spacing:.1em;flex:none}
+.dek{color:var(--ink3);font-size:13.5px;margin:0 0 20px;padding-left:44px}
+h3{font-size:16px;margin:30px 0 8px;letter-spacing:.02em}
+p{margin:13px 0}
+strong{font-weight:700}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunk);padding:1.5px 5px;
+  border-radius:3px}
+a{color:var(--accent)}
+ul,ol{padding-left:20px;margin:13px 0}
+li{margin:6px 0}
+
+/* ---------- 表格 ---------- */
+.scroll{overflow-x:auto;margin:18px 0}
+table{border-collapse:collapse;width:100%;min-width:420px;font-size:13.5px;
+  font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--rule2);vertical-align:top}
+thead th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink3);font-weight:400;border-bottom:1px solid var(--rule);white-space:nowrap}
+tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+td.n,th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
+.up{color:var(--up)} .down{color:var(--down)} .mut{color:var(--ink3)}
+
+/* ---------- 重點框 ---------- */
+.note{border-left:3px solid var(--accent);background:var(--accent-wash);
+  padding:14px 18px;margin:22px 0;border-radius:0 3px 3px 0}
+.note.warn{border-left-color:var(--warn);background:var(--warn-wash)}
+.note .h{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:5px}
+.note p{margin:6px 0} .note p:last-child{margin-bottom:0}
+
+.verdict{border:1px solid var(--rule);border-radius:4px;padding:20px 22px;margin:24px 0;
+  background:var(--raised)}
+.verdict .h{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink3)}
+.verdict .big{font-family:var(--serif);font-weight:700;font-size:20px;line-height:1.45;
+  margin:8px 0 0;text-wrap:balance}
+
+/* ---------- 圖表 ---------- */
+figure{margin:26px 0;padding:18px 4px 6px;border:1px solid var(--rule2);border-radius:4px;
+  background:var(--raised)}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:12px;color:var(--ink3);padding:10px 18px 6px;line-height:1.6}
+figcaption b{color:var(--ink2);font-weight:500}
+.fig-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink3);padding:0 18px 12px}
+
+/* ---------- 檢查清單 ---------- */
+.checks{list-style:none;padding:0;margin:18px 0;counter-reset:c}
+.checks li{counter-increment:c;padding:11px 0 11px 46px;position:relative;
+  border-bottom:1px solid var(--rule2);margin:0}
+.checks li:last-child{border-bottom:0}
+.checks li::before{content:counter(c);position:absolute;left:0;top:11px;
+  font-family:var(--mono);font-size:11px;color:var(--accent);
+  width:26px;height:26px;line-height:26px;text-align:center;
+  border:1px solid var(--rule);border-radius:50%}
+.checks b{display:block;font-size:14.5px}
+.checks span{color:var(--ink2);font-size:13px}
+
+/* ---------- 週計畫 ---------- */
+.weeks{display:grid;gap:1px;background:var(--rule2);border:1px solid var(--rule2);
+  border-radius:4px;overflow:hidden;margin:20px 0}
+.wk{background:var(--raised);padding:15px 18px}
+.wk .t{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--accent);
+  text-transform:uppercase}
+.wk h4{margin:5px 0 6px;font-size:15px}
+.wk p{margin:0;font-size:13px;color:var(--ink2)}
+.wk code{font-size:11.5px}
+
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--ink3)}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr;gap:0;padding:24px 16px 70px}
+  nav{position:static;margin-bottom:30px}
+  nav .inner{display:flex;flex-wrap:wrap;gap:4px 14px}
+  nav a{border-left:0;padding-left:0;margin-left:0}
+  nav a:hover{border-left:0}
+  .dek{padding-left:0}
+  h2{flex-direction:column;gap:2px}
+  body{font-size:15.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="shell">
+<nav>
+  <div class="lbl">目次</div>
+  <div class="inner">
+    <a href="#s1"><b>01</b>怎麼看這張圖</a>
+    <a href="#s2"><b>02</b>數據在測什麼</a>
+    <a href="#s3"><b>03</b>怎麼看懂產業</a>
+    <a href="#s4"><b>04</b>能不能預測</a>
+    <a href="#s5"><b>05</b>那要怎麼用</a>
+    <a href="#s6"><b>06</b>研究路線</a>
+    <a href="#s7"><b>07</b>常見陷阱</a>
+  </div>
+</nav>
+
+<main>
+  <div class="mast">
+    <div class="kicker">Capital Transfer Orbit · 判讀手冊</div>
+    <h1>資金流判讀手冊</h1>
+    <p class="standfirst">怎麼讀懂資金登月圖、它背後的數據到底在測什麼，
+      以及一個誠實的問題：這些數字能不能告訴你下一波誰會漲。</p>
+    <div class="provenance">
+      <span>樣本 <b>61 個交易日</b></span>
+      <span><b>2026-06-04 → 09-04</b></span>
+      <span><b>32</b> 個上市產業</span>
+      <span>資料源 <b>證交所 T86</b></span>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <div class="h">先講結論</div>
+    <p class="big">這份資料能清楚告訴你「錢剛剛去了哪裡」，
+      但幾乎沒辦法告訴你「錢接下來會去哪裡」。</p>
+    <p style="margin:12px 0 0;color:var(--ink2);font-size:14px">
+      我用你自己的 61 天資料實測過：資金流與<em>當天</em>漲跌的相關性極高（Rank IC 0.59、
+      t = 21.3），但對<em>隔天</em>只剩 0.068、對<em>三天後</em>歸零。
+      這個差別，就是整份手冊要教你分辨的東西。</p>
+  </div>
+
+  <section id="s1">
+    <h2><span class="num">01</span>怎麼看這張圖</h2>
+    <p class="dek">先分清楚哪些像素是資料，哪些像素是模型生出來的</p>
+
+    <p>球面上有兩種東西，可信度完全不同。這是理解整張圖的第一件事，
+      也是判斷任何資金流視覺化可不可信的第一個問題。</p>
+
+    <div class="scroll"><table>
+      <thead><tr><th>畫面元素</th><th>是什麼</th><th class="n">可信度</th></tr></thead>
+      <tbody>
+        <tr><td><b>光點</b>（大小、顏色）</td><td>該產業當日的淨流入／流出金額</td>
+            <td class="n down">真實資料</td></tr>
+        <tr><td><b>紫色光環</b></td><td>配不到對手的金額</td>
+            <td class="n down">真實資料</td></tr>
+        <tr><td><b>右上角百分比</b></td><td>殘差佔較大那一側的比重</td>
+            <td class="n down">真實資料</td></tr>
+        <tr><td><b>弧線</b>（誰連到誰）</td><td>配對演算法產生的推估</td>
+            <td class="n up">不是資料</td></tr>
+        <tr><td><b>弧線粗細</b></td><td>推估出來的那一筆金額</td>
+            <td class="n up">不是資料</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>為什麼弧線一定是推估的？因為<strong>沒有任何資料源會告訴你錢從哪個產業搬到哪個產業</strong>。
+      證交所只公布「每檔股票被法人買賣超多少股」，沒有人記錄「賣掉台積電的那筆錢去買了富邦金」。
+      所以弧線必須自己配對出來。</p>
+
+    <div class="note">
+      <div class="h">一個立刻可以做的驗證</div>
+      <p>在頁面上切換「貪婪 / 重力 / 運輸」三種演算法。你會看到<strong>左右排行榜完全不變，
+        只有弧線的連法變了</strong>。凡是切換演算法會變的東西，都來自模型；不會變的，才來自資料。</p>
+    </div>
+
+    <h3>五步判讀順序</h3>
+    <ol class="checks">
+      <li><b>先看殘差百分比，還有它在哪一側</b>
+        <span>「流入當中找不到對應流出」和「流出當中找不到對應流入」是完全相反的市場狀態。
+          你這 61 天裡，31 天殘差在流入側、30 天在流出側，幾乎各半。</span></li>
+      <li><b>看流入與流出的絕對規模</b>
+        <span>總量本身就是情緒溫度計。你的樣本裡最低 59 億、最高 881 億，差 15 倍。</span></li>
+      <li><b>看前三大流入與前三大流出的「族群」</b>
+        <span>是電子換電子（族群內輪動），還是傳產換電子（跨族群搬家）？後者才是結構性訊號。</span></li>
+      <li><b>點進單一產業，看它的集中度</b>
+        <span>這一步最常被跳過，卻最關鍵。詳見第 3 節。</span></li>
+      <li><b>最後才看弧線</b>
+        <span>把它當成「一種可能的敘事」，不是事實。看完記得問：換個演算法還成立嗎？</span></li>
+    </ol>
+  </section>
+
+  <section id="s2">
+    <h2><span class="num">02</span>數據在測什麼</h2>
+    <p class="dek">定義決定結論，而定義藏在細節裡</p>
+
+    <p>台股版的資金流是這樣算出來的：</p>
+    <div class="note">
+      <div class="h">定義</div>
+      <p><code>淨買賣超股數 = 外陸資 + 外資自營商 + 投信</code><br>
+         <code>資金流（元） = 淨買賣超股數 × 當日均價</code><br>
+         <code>均價 = 成交金額 ÷ 成交股數</code></p>
+    </div>
+
+    <h3>它測到什麼、測不到什麼</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>測得到</th><th>測不到</th></tr></thead>
+      <tbody>
+        <tr><td>外資（含陸資）的買賣超</td><td>散戶</td></tr>
+        <tr><td>投信（國內基金）的買賣超</td><td>公司派、內部人</td></tr>
+        <tr><td>只有上市，不含上櫃</td><td>自營商（本版刻意排除，多為避險部位）</td></tr>
+        <tr><td>只有收盤後的日頻</td><td>盤中任何時點——台股法人資料收盤才公布</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>這也是為什麼「資金流」不守恆。你這 61 天的<strong>平均殘差是 60.4%</strong>——
+      也就是說，畫面上的弧線平均只解釋了四成的資金移動，另外六成的對手方
+      根本不在這份統計裡。</p>
+
+    <div class="note warn">
+      <div class="h">最容易踩的坑：用均價，不是收盤價</div>
+      <p>法人不是在收盤那一秒買完的，他們整天都在成交。所以要用當天的平均成交價。</p>
+      <p>以 2026-09-04 的 <b>3231 緯創</b>為例：均價 196.51、收盤價 198.00，差 0.8%。
+        單檔看很小，但 64 檔加總、每天累積，就是完全不同的結論。
+        <strong>這類「口徑選擇」的錯誤，程式不會報錯，只會安靜地給你偏掉的答案。</strong></p>
+    </div>
+
+    <p>你可以自己拆開驗證任何一個數字：</p>
+    <div class="scroll"><table>
+      <thead><tr><th>指令</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>python scripts/verify_tw.py 電腦及週邊</code></td>
+            <td>把產業金額拆回個股，逐檔列出股數 × 均價，並和發布的數字對帳</td></tr>
+        <tr><td><code>python scripts/compare_algos.py data/tw.json</code></td>
+            <td>量化三種配對演算法的差異</td></tr>
+        <tr><td><code>python scripts/backtest.py</code></td>
+            <td>實測預測力（第 4 節的所有數字都來自這支）</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="s3">
+    <h2><span class="num">03</span>怎麼看懂產業</h2>
+    <p class="dek">先說清楚一件事：這份資料看不出產業能力的進步</p>
+
+    <p>你問「這會怎麼讓我了解產業的能力進步」——我得先把這個誤解拆掉，
+      因為它會影響你之後所有的解讀。</p>
+
+    <div class="note warn">
+      <div class="h">資金流測的是定價，不是能力</div>
+      <p>產業「能力進步」是基本面：營收成長、毛利率、資本支出、技術節點、產能利用率。
+        這些要看財報和法說會，資金流<strong>完全測不到</strong>。</p>
+      <p>資金流測的是<strong>市場此刻怎麼定價</strong>，以及<strong>大戶的注意力在哪裡</strong>。
+        兩者常常背離——一個產業可以能力大幅進步但資金持續流出（市場還沒認同、或早已反映）。</p>
+    </div>
+
+    <p>那它對理解產業有什麼用？三件事。</p>
+
+    <h3>一、看資金的長期方向，而不是單日</h3>
+    <p>單日資金流是雜訊，累積起來才有形狀。你這 61 天的累積淨流入：</p>
+
+    <figure>
+      <div class="fig-t">61 個交易日累積淨流入／流出（億元）</div>
+      <svg viewBox="0 0 640 268" role="img" aria-label="累積淨流入排行，金融保險最高 +1775 億，半導體業最低 −6870 億">
+        <line x1="318" y1="18" x2="318" y2="242" stroke="var(--rule)" stroke-width="1"/>
+        <text x="318" y="258" fill="var(--ink3)" font-size="10" font-family="var(--mono)" text-anchor="middle">0</text>
+        <g font-family="var(--mono)" font-size="10.5">
+          <g><rect x="318" y="20" width="54" height="15" fill="var(--up)"/><text x="310" y="32" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)" text-anchor="end">金融保險</text><text x="378" y="32" fill="var(--up)">+1775</text></g>
+          <g><rect x="318" y="42" width="51" height="15" fill="var(--up)"/><text x="310" y="54" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)" text-anchor="end">電腦及週邊</text><text x="375" y="54" fill="var(--up)">+1668</text></g>
+          <g><rect x="318" y="64" width="33" height="15" fill="var(--up)"/><text x="310" y="76" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)" text-anchor="end">航運業</text><text x="357" y="76" fill="var(--up)">+1073</text></g>
+          <g><rect x="312" y="86" width="6" height="15" fill="var(--up)"/><text x="304" y="98" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)" text-anchor="end">食品工業</text><text x="324" y="98" fill="var(--up)">+191</text></g>
+          <g><rect x="313" y="108" width="5" height="15" fill="var(--up)"/><text x="305" y="120" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)" text-anchor="end">鋼鐵工業</text><text x="324" y="120" fill="var(--up)">+161</text></g>
+          <g><rect x="312" y="140" width="6" height="15" fill="var(--down)"/><text x="324" y="152" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)">電子通路業</text><text x="306" y="152" fill="var(--down)" text-anchor="end">−183</text></g>
+          <g><rect x="304" y="162" width="14" height="15" fill="var(--down)"/><text x="324" y="174" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)">光電業</text><text x="298" y="174" fill="var(--down)" text-anchor="end">−446</text></g>
+          <g><rect x="303" y="184" width="15" height="15" fill="var(--down)"/><text x="324" y="196" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)">其他電子業</text><text x="297" y="196" fill="var(--down)" text-anchor="end">−501</text></g>
+          <g><rect x="257" y="206" width="61" height="15" fill="var(--down)"/><text x="324" y="218" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)">電子零組件</text><text x="251" y="218" fill="var(--down)" text-anchor="end">−1991</text></g>
+          <g><rect x="107" y="228" width="211" height="15" fill="var(--down)"/><text x="324" y="240" fill="var(--ink2)" font-size="11.5" font-family="var(--sans)">半導體業</text><text x="101" y="240" fill="var(--down)" text-anchor="end">−6870</text></g>
+        </g>
+      </svg>
+      <figcaption>方向（左／右）是主要編碼，顏色只是加強，每根都直接標數字。
+        <b>半導體業三個月被賣超 6870 億</b>，是第二名的 3.5 倍——這種規模的單向流出，
+        比任何單日新聞都值得追問原因。</figcaption>
+    </figure>
+
+    <h3>二、看集中度：是產業輪動，還是幾檔個股的事？</h3>
+    <p>這一步最能拉開專業與業餘的差距。以 9/04「電腦及週邊 +266 億」為例，拆開來看：</p>
+
+    <div class="scroll"><table>
+      <thead><tr><th>代號</th><th>名稱</th><th class="n">金額（億）</th><th class="n">佔比</th></tr></thead>
+      <tbody>
+        <tr><td class="mut">3231</td><td>緯創</td><td class="n">53.77</td><td class="n">20%</td></tr>
+        <tr><td class="mut">2382</td><td>廣達</td><td class="n">45.11</td><td class="n">17%</td></tr>
+        <tr><td class="mut">3017</td><td>奇鋐</td><td class="n">31.97</td><td class="n">12%</td></tr>
+        <tr><td class="mut">2324</td><td>仁寶</td><td class="n">28.33</td><td class="n">11%</td></tr>
+        <tr><td class="mut">2357</td><td>華碩</td><td class="n">25.32</td><td class="n">10%</td></tr>
+        <tr><td class="mut">—</td><td class="mut">其餘 59 檔</td><td class="n mut">81.74</td><td class="n mut">31%</td></tr>
+      </tbody>
+    </table></div>
+
+    <p><strong>前 5 檔佔了 69%。</strong>所以「資金湧向電腦及週邊」講得精確一點，
+      其實是「資金湧向緯創、廣達、奇鋐這幾檔 AI 伺服器鏈」。這個區別，
+      在你寫分析報告時就是專業與否的分野。</p>
+
+    <h3>三、看誰持續出現，而不是誰今天最大</h3>
+    <p>61 天裡進入「當日前三大流入」的次數：金融保險 31 次、電腦及週邊 25 次、
+      航運業 22 次、半導體業 18 次。注意半導體業累積是大幅淨流出，卻仍常進前三大流入——
+      代表它<strong>波動極大、雙向都很劇烈</strong>，而不是單純被拋棄。
+      只看累積會漏掉這件事。</p>
+  </section>
+
+  <section id="s4">
+    <h2><span class="num">04</span>能不能預測下一波</h2>
+    <p class="dek">我用你自己的 61 天資料實測了，結果在下面</p>
+
+    <p>這是你最想知道的問題，所以我沒有給你理論，我做了回測。
+      方法是量化研究的標準兩把尺。</p>
+
+    <h3>尺一：Rank IC（資訊係數）</h3>
+    <p>每一天，把當天各產業的「資金流排名」和「未來 N 天報酬排名」算 Spearman 相關，
+      得到一個數字；61 天得到 61 個數字，再看它的平均與 t 值。
+      業界的參考基準：<strong>IC 0.02–0.05 就算可用，0.10 以上非常罕見</strong>。</p>
+
+    <figure>
+      <div class="fig-t">資金流對未來報酬的預測力（z20 訊號）</div>
+      <div style="display:flex;gap:20px;padding:0 18px 10px;font-family:var(--mono);font-size:10.5px;color:var(--ink3)">
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <i style="width:11px;height:11px;background:var(--accent);display:inline-block"></i>統計顯著（|t| &gt; 2）</span>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <i style="width:11px;height:11px;background:var(--ink3);display:inline-block"></i>不顯著</span>
+      </div>
+      <svg viewBox="0 0 640 244" role="img" aria-label="Rank IC 隨預測期間衰減：1 日 0.068 統計顯著，3 日 0.000、5 日 −0.012、10 日 0.053 均不顯著">
+        <line x1="70" y1="42" x2="610" y2="42" stroke="var(--rule2)" stroke-width="1"/>
+        <line x1="70" y1="186" x2="610" y2="186" stroke="var(--rule2)" stroke-width="1"/>
+        <text x="62" y="46" fill="var(--ink3)" font-size="10" font-family="var(--mono)" text-anchor="end">0.08</text>
+        <text x="62" y="190" fill="var(--ink3)" font-size="10" font-family="var(--mono)" text-anchor="end">−0.04</text>
+        <line x1="70" y1="114" x2="610" y2="114" stroke="var(--rule)" stroke-width="1"/>
+        <text x="62" y="118" fill="var(--ink3)" font-size="10" font-family="var(--mono)" text-anchor="end">0</text>
+        <g font-family="var(--mono)" font-size="11">
+          <rect x="105" y="52" width="80" height="62" fill="var(--accent)"/>
+          <text x="145" y="45" fill="var(--accent)" text-anchor="middle" font-weight="600">0.068</text>
+          <text x="145" y="206" fill="var(--ink2)" text-anchor="middle" font-size="11.5" font-family="var(--sans)">1 日</text>
+          <text x="145" y="223" fill="var(--accent)" text-anchor="middle" font-size="10">t = 2.01</text>
+
+          <rect x="235" y="113" width="80" height="2" fill="var(--ink3)"/>
+          <text x="275" y="107" fill="var(--ink3)" text-anchor="middle">0.000</text>
+          <text x="275" y="206" fill="var(--ink2)" text-anchor="middle" font-size="11.5" font-family="var(--sans)">3 日</text>
+          <text x="275" y="223" fill="var(--ink3)" text-anchor="middle" font-size="10">t = 0.01</text>
+
+          <rect x="365" y="114" width="80" height="11" fill="var(--ink3)"/>
+          <text x="405" y="140" fill="var(--ink3)" text-anchor="middle">−0.012</text>
+          <text x="405" y="206" fill="var(--ink2)" text-anchor="middle" font-size="11.5" font-family="var(--sans)">5 日</text>
+          <text x="405" y="223" fill="var(--ink3)" text-anchor="middle" font-size="10">t = −0.29</text>
+
+          <rect x="495" y="66" width="80" height="48" fill="var(--ink3)"/>
+          <text x="535" y="59" fill="var(--ink3)" text-anchor="middle">0.053</text>
+          <text x="535" y="206" fill="var(--ink2)" text-anchor="middle" font-size="11.5" font-family="var(--sans)">10 日</text>
+          <text x="535" y="223" fill="var(--ink3)" text-anchor="middle" font-size="10">t = 1.39</text>
+        </g>
+      </svg>
+      <figcaption>只有 <b>1 日</b>那根統計上站得住腳。3 日與 5 日完全歸零；
+        10 日的 0.053 看似回升，但 t 值只有 1.39——在 61 天的樣本下，那和零沒有分別。
+        <b>訊號在一天之內就消失了。</b>看 IC 大小之前，先看 t 值。</figcaption>
+    </figure>
+
+    <h3>尺二：分位數組合</h3>
+    <p>IC 說「有沒有關係」，分位數說「賺不賺得到」。每天把 32 個產業依資金流分成 5 組，
+      看最高組減最低組的隔日報酬：</p>
+
+    <div class="scroll"><table>
+      <thead><tr><th>訊號口徑</th><th class="n">高流入組</th><th class="n">低流入組</th><th class="n">價差／日</th><th class="n">t 值</th></tr></thead>
+      <tbody>
+        <tr><td>raw（原始金額）</td><td class="n">+0.618%</td><td class="n">+0.062%</td><td class="n up">+0.557%</td><td class="n">2.25</td></tr>
+        <tr><td>z20（20 日標準化）</td><td class="n">+0.451%</td><td class="n">−0.121%</td><td class="n up">+0.572%</td><td class="n">2.43</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>每天 0.57% 的價差，聽起來很好。但這是<strong>毛的</strong>。</p>
+
+    <h3>然後交易成本把它吃掉</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>手續費條件</th><th class="n">來回成本</th><th class="n">淨值／日</th><th>結果</th></tr></thead>
+      <tbody>
+        <tr><td>全額手續費</td><td class="n">0.585%</td><td class="n">−0.013%</td><td class="down">倒賠</td></tr>
+        <tr><td>6 折手續費</td><td class="n">0.471%</td><td class="n">+0.101%</td><td>勉強有</td></tr>
+        <tr><td>2.8 折（大量交易）</td><td class="n">0.380%</td><td class="n">+0.192%</td><td>還可以</td></tr>
+      </tbody>
+    </table></div>
+    <p style="font-size:13px;color:var(--ink3)">
+      台股成本 = 手續費 0.1425% × 2（買賣各一次）+ 證交稅 0.3%（賣出）。以 z20 訊號計算。</p>
+
+    <div class="note warn">
+      <div class="h">最重要的一個陷阱</div>
+      <p>同一份資料，「今天的資金流 vs <strong>今天</strong>的漲跌」Rank IC 是
+        <strong>0.59，t = 21.3</strong>——高到不可思議。</p>
+      <p>但這個數字<strong>完全沒有預測價值</strong>。買盤推升價格是同時發生的，
+        不是誰預測誰。很多看起來厲害的「資金流分析」，秀的就是這個同期相關。
+        <strong>只要看到相關性沒有標明時間差，就要懷疑。</strong></p>
+    </div>
+
+    <div class="verdict">
+      <div class="h">實測結論</div>
+      <p class="big">訊號是真的存在的，但薄到跟交易成本同一個量級，而且一天就消失。</p>
+      <p style="margin:12px 0 0;color:var(--ink2);font-size:14px">
+        這不是壞消息，這是<em>正常</em>消息——絕大多數「看起來有效」的因子，
+        最後都死在這一步。知道這件事，比多找到一個因子重要得多。</p>
+    </div>
+  </section>
+
+  <section id="s5">
+    <h2><span class="num">05</span>那要怎麼用</h2>
+    <p class="dek">當脈絡工具，不當預測機器</p>
+
+    <p>既然預測力這麼薄，這份資料的價值在哪？在<strong>縮小你要研究的範圍</strong>，
+      以及<strong>驗證你既有的假設</strong>。這是研究流程的入口，不是出口。</p>
+
+    <h3>可以拿來問的三個問題</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>問題</th><th>怎麼看</th><th>接下來查什麼</th></tr></thead>
+      <tbody>
+        <tr><td>市場現在的注意力在哪？</td><td>連續 5–10 天累積淨流入前三名</td>
+            <td>去看那幾個產業最近的法說、營收月報</td></tr>
+        <tr><td>這是輪動還是個股事件？</td><td><code>verify_tw.py</code> 拆集中度</td>
+            <td>前 5 檔佔比 &gt; 60% 就是個股事件，去查那幾檔的新聞</td></tr>
+        <tr><td>資金方向和基本面一致嗎？</td><td>累積淨流入 vs 該產業營收年增率</td>
+            <td>背離的地方最有研究價值——不是市場錯了，就是你漏了什麼</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note">
+      <div class="h">一個真實可用的觀察</div>
+      <p>資金流本身<strong>有慣性</strong>：一階自相關 0.24–0.28。今天流入的產業，
+        明天傾向繼續流入。這比「預測漲跌」可靠得多——你可以用它判斷
+        <em>資金主題還在不在</em>，而不是<em>明天會不會漲</em>。</p>
+    </div>
+
+    <h3>不要這樣用</h3>
+    <ul>
+      <li><strong>不要只看單日排行就下判斷。</strong>單日雜訊極大，至少看 5 日累積。</li>
+      <li><strong>不要把弧線當成資金路徑。</strong>那是演算法畫的，換個演算法故事就變了。</li>
+      <li><strong>不要用它抓底或追高。</strong>訊號一天就衰減完，你的反應速度追不上。</li>
+      <li><strong>不要忽略殘差。</strong>殘差 88% 的日子，代表這份資料只解釋了 12% 的資金移動，
+        任何結論都要打折。</li>
+    </ul>
+  </section>
+
+  <section id="s6">
+    <h2><span class="num">06</span>研究路線</h2>
+    <p class="dek">四週，從看得懂到能提出自己的問題</p>
+
+    <div class="weeks">
+      <div class="wk">
+        <div class="t">第 1 週 · 建立信任</div>
+        <h4>手動驗證，不要相信任何自己算不出來的數字</h4>
+        <p>每天收盤後跑一次 <code>verify_tw.py</code>，挑一檔到證交所網站人工對帳。
+          目標不是找錯，是讓你對「這些數字從哪來」有肌肉記憶。</p>
+      </div>
+      <div class="wk">
+        <div class="t">第 2 週 · 建立語感</div>
+        <h4>每天記三個數字，累積自己的判斷基準</h4>
+        <p>流入總額、流出總額、殘差百分比與方向。再加上前三大流入／流出。
+          兩週後你會開始知道什麼叫「今天量很大」。</p>
+      </div>
+      <div class="wk">
+        <div class="t">第 3 週 · 開始提問</div>
+        <h4>找一個背離，追到底</h4>
+        <p>挑一個累積資金流方向和股價走勢相反的產業，去查財報、法說、月營收。
+          寫下你的解釋。這是第一份真正的研究筆記。</p>
+      </div>
+      <div class="wk">
+        <div class="t">第 4 週 · 動手改模型</div>
+        <h4>改一個參數，看數字怎麼動</h4>
+        <p>在 <code>fetch_tw.py</code> 的 <code>INSTITUTIONS</code> 加入自營商，
+          重跑 <code>backtest.py</code>，看 IC 有沒有變。這是量化研究最核心的循環。</p>
+      </div>
+    </div>
+
+    <h3>可以自己做的延伸實驗</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>改什麼</th><th>在哪裡</th><th>會學到</th></tr></thead>
+      <tbody>
+        <tr><td>法人加入自營商</td><td><code>fetch_tw.py</code> · <code>INSTITUTIONS</code></td>
+            <td>自營商是訊號還是雜訊</td></tr>
+        <tr><td>均價換成收盤價</td><td><code>fetch_tw.py</code> · <code>avg</code></td>
+            <td>口徑選擇對結果的量化影響</td></tr>
+        <tr><td>訊號改成 5 日累積</td><td><code>backtest.py</code></td>
+            <td>平滑掉雜訊之後 IC 會不會變好</td></tr>
+        <tr><td>只做多不做空</td><td><code>backtest.py</code> · <code>quintile</code></td>
+            <td>台股放空成本高，多空組合常常不可行</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="s7">
+    <h2><span class="num">07</span>常見陷阱</h2>
+    <p class="dek">這些我全都親自踩過，包括做這個系統的時候</p>
+
+    <div class="scroll"><table>
+      <thead><tr><th>陷阱</th><th>為什麼危險</th></tr></thead>
+      <tbody>
+        <tr><td><b>把同期相關當預測力</b></td>
+            <td>0.59 的 IC 看起來驚人，但那只是「買盤推升價格」的同義反覆</td></tr>
+        <tr><td><b>用收盤價代替均價</b></td>
+            <td>程式不會報錯，只會安靜地給你系統性偏掉的答案</td></tr>
+        <tr><td><b>忽略交易成本</b></td>
+            <td>0.57% 的毛價差，扣掉 0.585% 的來回成本就是負的</td></tr>
+        <tr><td><b>只看累積不看集中度</b></td>
+            <td>「產業資金流」有時其實是三檔股票的新聞</td></tr>
+        <tr><td><b>小樣本過度解讀</b></td>
+            <td>61 天只有 61 個獨立觀察，t = 2.0 很容易是運氣</td></tr>
+        <tr><td><b>綠燈就當成功</b></td>
+            <td>做這個系統時，一次 workflow 顯示成功，實際只抓到 5% 的資料</td></tr>
+        <tr><td><b>相信漂亮的視覺化</b></td>
+            <td>弧線越華麗，越要問它是不是被生出來的</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="verdict">
+      <div class="h">如果只記得一件事</div>
+      <p class="big">一個有價值的分析師和一個做圖漂亮的人，
+        差別在於會不會盯著那個「未配對比例」看。</p>
+      <p style="margin:12px 0 0;color:var(--ink2);font-size:14px">
+        因為那個數字誠實地告訴你：這張圖有多少是你真的知道的，
+        多少只是看起來知道。</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>所有數字來自證交所公開資料，樣本期間 2026-06-04 至 2026-09-04，共 61 個交易日、32 個上市產業。
+      回測結果可用 <code>python scripts/backtest.py</code> 重現。</p>
+    <p>本文是研究方法的說明，不是投資建議。我不是理財顧問，
+      上面所有實測結果都建立在 61 天的小樣本上，統計效力有限，
+      不應作為任何買賣決策的依據。</p>
+  </footer>
+</main>
+</div>

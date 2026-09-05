@@ -1,0 +1,1327 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="台股與美股產業資金流的球面軌道圖">
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<title>資金登月圖</title>
+<style>
+:root{
+  --void:#05070F; --panel:rgba(13,17,32,.72); --panel2:rgba(24,31,54,.7);
+  --rule:rgba(48,62,104,.55); --rule2:rgba(34,45,78,.5);
+  --ink:#E8ECF8; --ink2:#95A0BF; --ink3:#5A6584;
+  --in:#F02040; --out:#00A87B; --unm:#9C3CF0;
+  --in-g:#FF5C78; --out-g:#2FD6A6; --unm-g:#B978FF;
+  --serif:"Noto Serif TC",Songti TC,serif;
+  --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--ink);font-family:var(--sans);
+  font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+.app{display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px}
+
+/* ---------- masthead ---------- */
+.top{display:flex;align-items:baseline;gap:12px 18px;flex-wrap:wrap;flex:none}
+.top h1{font-family:var(--serif);font-weight:900;font-size:21px;letter-spacing:.2em;
+  margin:0;text-indent:.2em;white-space:nowrap}
+.top .en{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--ink3);
+  text-transform:uppercase;white-space:nowrap}
+.chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;padding:3px 8px;
+  border:1px solid var(--rule);border-radius:2px;color:var(--ink2);white-space:nowrap}
+.chip.dm{border-color:#3A2352;color:var(--unm-g);background:rgba(28,12,40,.6)}
+.chip.lv{border-color:#14432F;color:var(--out-g);background:rgba(4,26,18,.6)}
+.chip.sn{border-color:#3A2A18;color:#D9A441;background:rgba(30,20,6,.6)}
+.grp.mkt button{font-size:11px;padding:4px 13px;letter-spacing:.14em}
+.top .meta{margin-left:auto;display:flex;gap:18px;font-family:var(--mono);font-size:11px;
+  color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.top .meta i{font-style:normal;color:var(--ink3);letter-spacing:.14em;margin-right:6px;font-size:9px;
+  text-transform:uppercase}
+
+/* ---------- stage ---------- */
+.stage{display:flex;flex-direction:column;gap:10px;min-height:0}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--rule2);border-radius:3px;
+  display:flex;flex-direction:column;min-height:0;backdrop-filter:blur(3px)}
+.card>header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  padding:9px 12px 5px;flex:none}
+.card>header .t{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase}
+.card>header .n{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;font-weight:500}
+.card .sub{padding:0 12px 8px;font-size:10.5px;color:var(--ink3);flex:none}
+.outflow>header .t,.outflow>header .n{color:var(--out-g)}
+.inflow>header .t,.inflow>header .n{color:var(--in-g)}
+.ledwrap{overflow:auto;min-height:0;overscroll-behavior:contain;flex:1}
+.ledwrap::-webkit-scrollbar{width:7px}
+.ledwrap::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+
+table.ledger{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.ledger td{padding:0;border-top:1px solid var(--rule2)}
+.row{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:7px;
+  padding:5px 12px;position:relative;cursor:pointer;width:100%;text-align:left;
+  background:none;border:0;color:inherit;font:inherit}
+.row:hover{background:var(--panel2)}
+.row .bar{position:absolute;left:0;top:0;bottom:0;pointer-events:none}
+.outflow .row .bar{background:linear-gradient(90deg,rgba(0,168,123,.26),rgba(0,168,123,.03))}
+.inflow  .row .bar{background:linear-gradient(90deg,rgba(240,32,64,.26),rgba(240,32,64,.03))}
+.row.on{background:var(--panel2)} .row.on .bar{filter:brightness(2)}
+.row>*{position:relative}
+.row .rk{font-family:var(--mono);font-size:9px;color:var(--ink3)}
+.row .nm{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .amt{font-family:var(--mono);font-size:11.5px;text-align:right;line-height:1.3}
+.row .amt b{font-weight:500;display:block}
+.row .amt s{display:block;font-size:9px;text-decoration:none;color:var(--ink3)}
+.outflow .row .amt b{color:var(--out-g)} .inflow .row .amt b{color:var(--in-g)}
+.amt s.up{color:var(--in-g)} .amt s.dn{color:var(--out-g)}
+
+/* ---------- globe ---------- */
+.globe{position:relative;background:#070A14;border:1px solid var(--rule2);border-radius:3px;
+  overflow:hidden;flex:1;min-height:280px}
+#sky{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#sky:active{cursor:grabbing}
+.hint{position:absolute;left:12px;bottom:10px;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.1em;color:var(--ink3);pointer-events:none}
+
+/* ---------- stat / detail ---------- */
+.stat{padding:10px 12px 12px;flex:none}
+.stat .big{font-family:var(--mono);font-size:34px;font-weight:600;line-height:1;color:var(--unm-g)}
+.stat .cap{font-size:11px;color:var(--ink2);margin-top:4px}
+.stat .note{font-size:9.5px;color:var(--ink3);border-left:2px solid var(--rule);
+  padding-left:8px;margin-top:8px;line-height:1.5}
+/* 窄欄裡三欄會被擠爆，改成三列的標籤／數值對 */
+.trio{border-top:1px solid var(--rule2);margin-top:10px}
+.trio div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:5px 0;border-bottom:1px solid var(--rule2)}
+.trio div:last-child{border-bottom:0}
+.trio .k{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--ink3);
+  text-transform:uppercase;white-space:nowrap}
+.trio .v{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.detail{padding:9px 12px 11px;flex:none}
+.detail .sect{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--ink3);text-transform:uppercase}
+.detail .nm{font-family:var(--serif);font-size:17px;font-weight:700;margin-top:2px;line-height:1.3}
+.detail .amt{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1.15}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:8px 0 0;
+  font-size:11px;font-variant-numeric:tabular-nums}
+.detail dt{color:var(--ink3)} .detail dd{margin:0;text-align:right;font-family:var(--mono)}
+.detail .idle{color:var(--ink3);font-size:11px;line-height:1.65;margin:0}
+
+/* ---------- 趨勢洞察 ---------- */
+.insight{flex:0 0 auto}
+.ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule2);
+  border-top:1px solid var(--rule2)}
+.ins-col{background:var(--panel);padding:9px 12px 11px;min-width:0}
+.ins-h{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--ink3);
+  text-transform:uppercase;margin-bottom:7px}
+.ins-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+  padding:3.5px 0;font-size:11.5px;position:relative}
+.ins-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.ins-row .v{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums;
+  white-space:nowrap;position:relative}
+.ins-row .track{position:absolute;left:0;top:2px;bottom:2px;pointer-events:none;opacity:.5}
+.ins-empty{font-size:11px;color:var(--ink3);line-height:1.55;padding:2px 0 4px}
+.dots{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
+.dots i{width:4px;height:4px;border-radius:50%;background:var(--ink3);opacity:.32}
+.dots i.on{opacity:1}
+/* 族群強弱：中線往兩側長的分歧條 */
+.sbar{position:relative;height:7px;margin:0 0 4px}
+.sbar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--rule);z-index:1}
+.sbar .fill{position:absolute;top:1.5px;bottom:1.5px;opacity:.62;border-radius:1px}
+.ins-col .ins-row{padding:2.5px 0}
+
+/* ---------- footer ---------- */
+.foot{flex:none;display:flex;gap:14px 24px;align-items:flex-end;flex-wrap:wrap;
+  border-top:1px solid var(--rule2);padding-top:11px}
+.say{min-width:0;flex:1 1 380px}
+.eyebrow{font-family:var(--mono);font-size:8.5px;letter-spacing:.28em;color:var(--ink3);text-transform:uppercase}
+.say h2{font-family:var(--serif);font-weight:700;font-size:clamp(19px,2.3vw,28px);
+  margin:5px 0 6px;letter-spacing:.03em;text-wrap:balance;line-height:1.25}
+.say p{max-width:74ch;color:var(--ink2);font-size:11.5px;margin:0;line-height:1.55}
+.say p b{color:var(--unm-g);font-family:var(--mono);font-weight:500}
+.ctrls{display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:10.5px;color:var(--ink2);justify-content:flex-end}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.o{background:transparent;border:1.6px solid var(--out-g)}
+.dot.i{background:var(--in-g)} .dot.u{background:transparent;border:1.6px solid var(--unm-g)}
+.swoosh{width:22px;height:2px;background:linear-gradient(90deg,var(--out-g),var(--in-g));flex:none}
+.seg{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+.grp{display:flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.grp button,.solo{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:5px 10px;
+  background:none;border:0;color:var(--ink3);cursor:pointer;white-space:nowrap}
+.grp button+button{border-left:1px solid var(--rule)}
+.grp button[aria-pressed=true]{background:var(--panel2);color:var(--ink)}
+.grp button:hover,.solo:hover{color:var(--ink)}
+.solo{border:1px solid var(--rule);border-radius:2px}
+.solo[aria-pressed=true]{background:var(--panel2);color:var(--ink)}
+:focus-visible{outline:1px solid var(--unm-g);outline-offset:2px}
+
+/* ---------- 說明 overlay ---------- */
+.scrim{position:fixed;inset:0;background:rgba(3,5,12,.78);z-index:40;display:none;
+  padding:24px 16px;overflow:auto}
+.scrim.open{display:block}
+.sheet{max-width:760px;margin:0 auto;background:#0B0F1D;border:1px solid var(--rule);
+  border-radius:4px;padding:6px 22px 26px}
+.sheet .bar{position:sticky;top:0;background:#0B0F1D;display:flex;justify-content:space-between;
+  align-items:center;padding:14px 0 10px;border-bottom:1px solid var(--rule2);margin-bottom:4px}
+.sheet .bar b{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  font-weight:500;color:var(--ink2)}
+.sheet h3{font-size:13.5px;margin:18px 0 5px;letter-spacing:.03em}
+.sheet p,.sheet li{font-size:12.5px;color:var(--ink2);margin:6px 0;line-height:1.7}
+.sheet strong{color:var(--ink)}
+.sheet code{font-family:var(--mono);font-size:11.5px;background:var(--panel2);padding:1px 5px;
+  border-radius:2px;color:var(--ink)}
+.scrollx{overflow-x:auto}
+table.spec{border-collapse:collapse;font-size:12px;margin-top:8px;min-width:480px;width:100%}
+table.spec th,table.spec td{border:1px solid var(--rule2);padding:6px 9px;text-align:left;vertical-align:top}
+table.spec th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink3);font-weight:400;background:var(--panel2)}
+table.spec td{color:var(--ink2)}
+pre{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--rule2);
+  border-radius:2px;padding:11px;overflow-x:auto;color:var(--ink2);line-height:1.55}
+.io{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:9px}
+.io input[type=file]{font-family:var(--mono);font-size:10.5px;color:var(--ink3);max-width:100%}
+textarea{width:100%;min-height:84px;background:#05070F;color:var(--ink);border:1px solid var(--rule);
+  border-radius:2px;font-family:var(--mono);font-size:11px;padding:8px;resize:vertical;margin-top:9px}
+.msg{font-family:var(--mono);font-size:10.5px;margin-top:7px;min-height:15px}
+.msg.ok{color:var(--out-g)} .msg.err{color:var(--in-g)}
+
+/* ---------- 橫式滿版：夠寬夠高才鎖成一個畫面 ---------- */
+@media (min-width:1000px) and (min-height:600px){
+  body{height:100vh;height:100dvh;overflow:hidden}
+  .app{height:100vh;height:100dvh}
+  /* grid 的隱含列預設是 auto，會被內容撐破容器；明確給 minmax(0,1fr) 才會乖乖縮 */
+  .stage{flex:1 1 0;min-height:0;display:grid;gap:10px;
+    grid-template-columns:minmax(210px,17%) minmax(0,1fr) minmax(210px,17%);
+    grid-template-rows:minmax(0,1fr)}
+  .col{min-height:0;min-width:0;overflow:hidden}
+  .col>.card{min-height:0}
+  .col>.outflow,.col>.inflow{flex:1 1 auto}   /* 榜單吸收剩餘高度並可捲動 */
+  .col>.card:not(.outflow):not(.inflow){flex:0 0 auto}
+  .globe{min-height:0}
+  .foot{flex:0 0 auto}
+}
+@media (max-width:999px),(max-height:599px){
+  .globe{height:min(78vw,460px);flex:none}
+  .ledwrap{max-height:340px}
+  .top .meta{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){.hint{display:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <h1>資金登月圖</h1>
+    <span class="en">Capital Transfer Orbit</span>
+    <div class="grp mkt" id="mktGrp" role="group" aria-label="市場">
+      <button data-mkt="tw" aria-pressed="true">台股</button>
+      <button data-mkt="us" aria-pressed="false">美股</button>
+    </div>
+    <span class="chip dm" id="srcChip">示範資料</span>
+    <div class="meta">
+      <span><i>快照</i><span id="snapT">—</span></span>
+      <span><i>產業數</i><span id="snapN">—</span></span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="col">
+      <section class="card outflow">
+        <header><span class="t">資金流出</span><span class="n" id="outTot">—</span></header>
+        <div class="sub" id="outSub">錢正在離開這些產業</div>
+        <div class="ledwrap"><table class="ledger"><tbody id="outBody"></tbody></table></div>
+      </section>
+      <section class="card">
+        <header><span class="t">產業明細</span></header>
+        <div class="detail" id="detail"></div>
+      </section>
+    </div>
+
+    <div class="col mid">
+      <div class="globe">
+        <canvas id="sky"></canvas>
+        <div class="hint">拖曳旋轉 · 點光點看細節</div>
+      </div>
+      <section class="card insight">
+        <header>
+          <span class="t">趨勢洞察</span>
+          <span class="n" id="insWin">單日</span>
+        </header>
+        <div class="ins-grid">
+          <div class="ins-col">
+            <div class="ins-h">持續同向 前 5</div>
+            <div id="persistList"></div>
+          </div>
+          <div class="ins-col">
+            <div class="ins-h">族群相對強弱</div>
+            <div id="sectorList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card inflow">
+        <header><span class="t">資金流入</span><span class="n" id="inTot">—</span></header>
+        <div class="sub" id="inSub">錢正在進入這些產業</div>
+        <div class="ledwrap"><table class="ledger"><tbody id="inBody"></tbody></table></div>
+      </section>
+      <section class="card">
+        <header><span class="t">本時段數據</span></header>
+        <div class="stat">
+          <div class="big" id="unmPct">—</div>
+          <div class="cap" id="unmCap">流入當中，找不到對應流出的比例</div>
+          <div class="note">淨流的定義由資料來源決定。這個差額不必然代表場外資金。</div>
+          <div class="trio">
+            <div><div class="k">流入</div><div class="v" id="s1" style="color:var(--in-g)">—</div></div>
+            <div><div class="k">流出</div><div class="v" id="s2" style="color:var(--out-g)">—</div></div>
+            <div><div class="k">已配對</div><div class="v" id="s3">—</div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="say">
+      <div class="eyebrow" id="eyebrow">—</div>
+      <h2 id="headline">—</h2>
+      <p id="subhead"></p>
+    </div>
+    <div class="ctrls">
+      <div class="legend">
+        <span><i class="swoosh"></i>綠色起飛，紅色降落（推估軌跡）</span>
+        <span><i class="dot o"></i>流出</span>
+        <span><i class="dot i"></i>流入</span>
+        <span><i class="dot u"></i>無法配對</span>
+      </div>
+      <div class="seg">
+        <div class="grp" id="algoGrp" role="group" aria-label="配對演算法">
+          <button data-algo="greedy" aria-pressed="true">貪婪</button>
+          <button data-algo="gravity" aria-pressed="false">重力</button>
+          <button data-algo="transport" aria-pressed="false">運輸</button>
+        </div>
+        <div class="grp" id="winGrp" role="group" aria-label="累積期間">
+          <button data-win="1" aria-pressed="true">單日</button>
+          <button data-win="5" aria-pressed="false">5 日</button>
+          <button data-win="10" aria-pressed="false">10 日</button>
+        </div>
+        <div class="grp" id="topGrp" role="group" aria-label="顯示數量">
+          <button data-top="12" aria-pressed="false">前 12</button>
+          <button data-top="40" aria-pressed="false">前 40</button>
+          <button data-top="all" aria-pressed="true">全部</button>
+        </div>
+        <button class="solo" id="spinBtn" aria-pressed="true">自轉</button>
+        <button class="solo" id="helpBtn">說明</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="模型說明">
+    <div class="bar"><b>模型說明</b><button class="solo" id="closeBtn">關閉</button></div>
+
+    <h3>這張圖分成兩層：一層真的，一層推估的</h3>
+    <p>球面上的<strong>光點</strong>是真資料：每個產業當期的淨流入或淨流出金額。球面上的<strong>弧線</strong>不是真資料，是配對演算法生出來的。</p>
+    <p>原因很單純：市場資料只給得出「每個產業淨流入多少」，<strong>沒有任何資料源會告訴你錢從哪個產業搬到哪個產業</strong>。所以弧線必須自己配對，而配對規則就是這個模型真正的設計選擇。</p>
+
+    <h3>可配對的量</h3>
+    <p>可配對總量 = <code>min(總流出, 總流入)</code>。多出來的那一側沒有對應的對手，就標成紫色的光環。<strong>兩個方向都會發生</strong>：流入大於流出時，是找不到來源的流入；流出大於流入時，是找不到去處的流出。台股用外資買賣超算的時候，大跌日常常是後者。右邊那個百分比就是這個差額佔較大那一側的比重。</p>
+
+    <h3>三種配對演算法</h3>
+    <div class="scrollx"><table class="spec">
+      <thead><tr><th>演算法</th><th>規則</th><th>畫面特徵</th></tr></thead>
+      <tbody>
+        <tr><td>貪婪</td><td>兩邊各自由大到小排序，流出最大的先配給流入最大的，填滿換下一個</td><td>弧線最少最粗，故事集中在龍頭</td></tr>
+        <tr><td>重力</td><td>flow(i→j) 正比於 流出<sub>i</sub> × 流入<sub>j</sub>，每一對都有流量</td><td>弧線最密最細，像全面性輪動</td></tr>
+        <tr><td>運輸</td><td>最小成本法：同族群配對成本 0.25、跨族群 1.0，優先在族群內消化</td><td>先在族群內短跳，剩餘才跨族群長跳</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>一個容易誤會的重點</h3>
+    <p>切換演算法時，左右排行榜和每個產業「無法配對」的金額<strong>完全不變</strong>，只有弧線的連法變了。這是對的：演算法決定的是<em>誰配給誰</em>，不是<em>每個產業拿到多少</em>。後者由真實資料決定，前者才是推估。弧線越漂亮，越要問它是不是被生出來的。</p>
+
+    <h3>多日累積、持續性、族群強弱</h3>
+    <p>切到「5 日」或「10 日」之後，球面與左右榜單顯示的是<strong>該期間的累積淨流入</strong>，
+      不再是單日。同時下方會出現兩份排行：</p>
+    <p><strong>持續同向</strong>：該產業在視窗內，有幾天的方向跟累積方向一致。
+      10 天裡 9 天同向的 +50 億，和 1 天暴衝其餘平盤的 +50 億，意義完全不同。
+      實測資金流的一階自相關是 0.24–0.28，<strong>有慣性</strong>——這是這份資料裡
+      比「預測漲跌」可靠得多的性質。</p>
+    <p><strong>族群相對強弱</strong>：<code>Σ淨流入 ÷ Σ|淨流入|</code>，範圍 −1 到 +1。
+      除以絕對值總和是為了讓大小族群可以比較——看的是方向有多一致，不是金額有多大。
+      +1 代表該族群內每個產業都在流入，0 代表多空互相抵銷。
+      名稱後面的小數字是該族群包含幾個產業——<strong>只有一個產業的族群
+      （運輸、醫療、服務、公用）分數必然是 ±1.00，不要跟電子那種 9 個產業的 +0.8 相提並論</strong>。</p>
+
+    <h3>換成真實資料</h3>
+    <p>目前載入的是示範資料，數字是模擬的，<strong>不能拿來做投資判斷</strong>。JSON 格式如下：</p>
+    <pre id="schema"></pre>
+    <p><code>net</code> 是當期淨流入（億元，正流入負流出），<code>chg</code> 是產業漲跌幅（%），<code>sector</code> 是上層族群，決定球面聚落位置與運輸演算法的成本。</p>
+    <div class="io">
+      <input type="file" id="file" accept="application/json,.json" aria-label="載入 JSON 檔">
+      <button class="solo" id="resetBtn">還原示範資料</button>
+    </div>
+    <textarea id="paste" placeholder="或把 JSON 貼在這裡，然後按下方套用" spellcheck="false"></textarea>
+    <div class="io"><button class="solo" id="applyBtn">套用貼上的資料</button></div>
+    <div class="msg" id="msg" role="status"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== 示範資料 ===================== */
+const DEMO_TW = {
+ meta:{market:"台股 上市",unit:"億元",snapshot:"2026-09-04",freq:"收盤後更新",source:"證交所 T86 · 外資＋投信買賣超股數 × 當日均價"},
+ industries:[
+  {name:"電腦及週邊",sector:"電子",net:266.23,chg:5.31},
+  {name:"電子零組件",sector:"電子",net:123.82,chg:5.27},
+  {name:"其他電子業",sector:"電子",net:62.22,chg:2.79},
+  {name:"金融保險",sector:"金融",net:44.61,chg:0.8},
+  {name:"半導體業",sector:"電子",net:36.38,chg:1.95},
+  {name:"電機機械",sector:"工業",net:7.43,chg:5.05},
+  {name:"食品工業",sector:"民生",net:1.58,chg:0.14},
+  {name:"汽車工業",sector:"工業",net:1.29,chg:1.93},
+  {name:"資訊服務業",sector:"電子",net:1.28,chg:1.71},
+  {name:"紡織纖維",sector:"民生",net:1.02,chg:0.05},
+  {name:"數位雲端",sector:"電子",net:0.39,chg:2.2},
+  {name:"建材營造",sector:"營建",net:0.24,chg:0.13},
+  {name:"運動休閒",sector:"民生",net:0.05,chg:0.63},
+  {name:"電器電纜",sector:"工業",net:-0.06,chg:0.88},
+  {name:"觀光餐旅",sector:"服務",net:-0.09,chg:0.05},
+  {name:"橡膠工業",sector:"原物料",net:-0.17,chg:0.37},
+  {name:"居家生活",sector:"民生",net:-0.25,chg:-0.34},
+  {name:"貿易百貨",sector:"民生",net:-0.29,chg:0.31},
+  {name:"造紙工業",sector:"原物料",net:-0.37,chg:-1.21},
+  {name:"玻璃陶瓷",sector:"原物料",net:-0.55,chg:0.95},
+  {name:"油電燃氣",sector:"公用",net:-0.72,chg:1.9},
+  {name:"鋼鐵工業",sector:"原物料",net:-0.88,chg:0.1},
+  {name:"化學工業",sector:"原物料",net:-0.91,chg:0.85},
+  {name:"綠能環保",sector:"工業",net:-1.34,chg:0.5},
+  {name:"水泥工業",sector:"原物料",net:-1.51,chg:0.44},
+  {name:"電子通路業",sector:"電子",net:-2.38,chg:1.34},
+  {name:"通信網路業",sector:"電子",net:-2.65,chg:0.49},
+  {name:"其他業",sector:"其他",net:-3.57,chg:0.35},
+  {name:"光電業",sector:"電子",net:-6.97,chg:4.29},
+  {name:"生技醫療",sector:"醫療",net:-11.09,chg:-1.83},
+  {name:"塑膠工業",sector:"原物料",net:-15.77,chg:1.59},
+  {name:"航運業",sector:"運輸",net:-18.41,chg:-1.9}
+ ]
+};
+
+const DEMO_US = {
+ meta:{market:"美股 S&P 500",unit:"億美元",snapshot:"2026-09-04 22:45",freq:"每 15 分鐘更新",source:"示範資料"},
+ industries:[
+  {name:"半導體",sector:"資訊科技",net:63.2,chg:1.92},
+  {name:"半導體設備及材料",sector:"資訊科技",net:16.81,chg:1.4},
+  {name:"系統軟體",sector:"資訊科技",net:16.0,chg:1.36},
+  {name:"航空航天與國防",sector:"工業",net:13.0,chg:0.47},
+  {name:"電腦硬體與儲存",sector:"資訊科技",net:12.02,chg:1.09},
+  {name:"互動媒體與服務",sector:"通訊服務",net:11.94,chg:1.04},
+  {name:"資料中心不動產信託",sector:"房地產",net:8.45,chg:-0.89},
+  {name:"電氣設備及零件",sector:"工業",net:7.49,chg:0.03},
+  {name:"應用軟體",sector:"資訊科技",net:6.41,chg:0.64},
+  {name:"交易所與金融數據",sector:"金融",net:5.8,chg:0.06},
+  {name:"電子代工服務",sector:"資訊科技",net:3.99,chg:0.01},
+  {name:"通訊設備",sector:"資訊科技",net:3.28,chg:-0.47},
+  {name:"重電設備",sector:"工業",net:2.8,chg:-0.09},
+  {name:"電力公用",sector:"公用事業",net:2.54,chg:0.12},
+  {name:"汽車製造",sector:"非必需消費",net:2.04,chg:-0.18},
+  {name:"生物科技",sector:"醫療保健",net:1.91,chg:0.8},
+  {name:"獨立電廠與能源交易",sector:"公用事業",net:1.64,chg:0.08},
+  {name:"網路服務與基礎設施",sector:"資訊科技",net:1.05,chg:0.32},
+  {name:"支付處理",sector:"金融",net:0.79,chg:0.74},
+  {name:"工業機械與零組件",sector:"工業",net:0.64,chg:0.06},
+  {name:"互動娛樂",sector:"通訊服務",net:0.53,chg:-1.21},
+  {name:"銅業",sector:"原物料",net:0.39,chg:0.15},
+  {name:"再保險",sector:"金融",net:-0.03,chg:-0.09},
+  {name:"旅宿不動產信託",sector:"房地產",net:-0.03,chg:-0.26},
+  {name:"紙製品",sector:"原物料",net:-0.03,chg:0.06},
+  {name:"醫療機構",sector:"醫療保健",net:-0.04,chg:0.9},
+  {name:"其他特殊信託",sector:"房地產",net:-0.04,chg:-0.66},
+  {name:"消費金融",sector:"金融",net:-0.05,chg:-0.41},
+  {name:"家具家飾",sector:"非必需消費",net:-0.05,chg:-0.56},
+  {name:"教育服務",sector:"非必需消費",net:-0.05,chg:0.02},
+  {name:"旅宿與郵輪",sector:"非必需消費",net:-0.06,chg:-0.47},
+  {name:"博弈",sector:"非必需消費",net:-0.06,chg:0.56},
+  {name:"資訊顧問服務",sector:"資訊科技",net:-0.07,chg:0.25},
+  {name:"生命科學工具",sector:"醫療保健",net:-0.07,chg:0.19},
+  {name:"投資銀行與券商",sector:"金融",net:-0.07,chg:0.5},
+  {name:"綜合保險",sector:"金融",net:-0.07,chg:0.8},
+  {name:"大宗化學",sector:"原物料",net:-0.07,chg:-0.17},
+  {name:"工業不動產信託",sector:"房地產",net:-0.08,chg:-0.31},
+  {name:"肥料與農用化學",sector:"原物料",net:-0.08,chg:0.21},
+  {name:"客運航空",sector:"工業",net:-0.09,chg:0.3},
+  {name:"陸運貨運",sector:"工業",net:-0.1,chg:0.74},
+  {name:"營建材料",sector:"原物料",net:-0.1,chg:-0.59},
+  {name:"醫療耗材",sector:"醫療保健",net:-0.11,chg:0.04},
+  {name:"出版",sector:"通訊服務",net:-0.11,chg:0.42},
+  {name:"自來水公用",sector:"公用事業",net:-0.11,chg:0.4},
+  {name:"鞋類",sector:"非必需消費",net:-0.12,chg:0.46},
+  {name:"綜合電信",sector:"通訊服務",net:-0.12,chg:0.6},
+  {name:"電子零組件",sector:"資訊科技",net:-0.14,chg:-0.29},
+  {name:"保險經紀",sector:"金融",net:-0.14,chg:-0.14},
+  {name:"酒商",sector:"必需消費",net:-0.14,chg:-0.51},
+  {name:"電信基地台信託",sector:"房地產",net:-0.14,chg:-0.05},
+  {name:"鐵路運輸",sector:"工業",net:-0.15,chg:-0.04},
+  {name:"藥品零售",sector:"必需消費",net:-0.15,chg:-0.16},
+  {name:"無線電信",sector:"通訊服務",net:-0.16,chg:-0.17},
+  {name:"個人護理用品",sector:"必需消費",net:-0.16,chg:-0.17},
+  {name:"食品零售",sector:"必需消費",net:-0.17,chg:-0.13},
+  {name:"油氣設備與服務",sector:"能源",net:-0.17,chg:-0.49},
+  {name:"居家修繕零售",sector:"非必需消費",net:-0.18,chg:-0.61},
+  {name:"黃金",sector:"原物料",net:-0.18,chg:0.56},
+  {name:"有線與衛星電視",sector:"通訊服務",net:-0.19,chg:-0.4},
+  {name:"廣告",sector:"通訊服務",net:-0.19,chg:0.21},
+  {name:"農業機械",sector:"工業",net:-0.19,chg:0.44},
+  {name:"再生能源發電",sector:"公用事業",net:-0.19,chg:0.77},
+  {name:"工業集團",sector:"工業",net:-0.2,chg:-0.01},
+  {name:"不動產服務",sector:"房地產",net:-0.2,chg:0.67},
+  {name:"工業氣體",sector:"原物料",net:-0.2,chg:0.25},
+  {name:"科技通路",sector:"資訊科技",net:-0.21,chg:0.08},
+  {name:"汽車零組件",sector:"非必需消費",net:-0.21,chg:0.02},
+  {name:"汽車零售",sector:"非必需消費",net:-0.21,chg:-0.02},
+  {name:"經銷商",sector:"非必需消費",net:-0.21,chg:0.02},
+  {name:"廣播電視",sector:"通訊服務",net:-0.22,chg:-0.22},
+  {name:"農產品",sector:"必需消費",net:-0.23,chg:0.09},
+  {name:"自助倉儲信託",sector:"房地產",net:-0.23,chg:-0.37},
+  {name:"建材產品",sector:"工業",net:-0.24,chg:0.41},
+  {name:"貿易與經銷",sector:"工業",net:-0.24,chg:-0.51},
+  {name:"電子設備及儀器",sector:"資訊科技",net:-0.25,chg:0.67},
+  {name:"休閒設施",sector:"非必需消費",net:-0.26,chg:0.66},
+  {name:"海運",sector:"工業",net:-0.26,chg:0.17},
+  {name:"休閒用品",sector:"非必需消費",net:-0.27,chg:0.08},
+  {name:"家用電器",sector:"非必需消費",net:-0.27,chg:-0.6},
+  {name:"金屬玻璃塑膠容器",sector:"原物料",net:-0.27,chg:0.72},
+  {name:"資產管理與託管",sector:"金融",net:-0.28,chg:0.81},
+  {name:"釀酒",sector:"必需消費",net:-0.29,chg:-0.04},
+  {name:"綜合公用",sector:"公用事業",net:-0.29,chg:-0.42},
+  {name:"影視娛樂",sector:"通訊服務",net:-0.3,chg:-0.91},
+  {name:"環境與設施服務",sector:"工業",net:-0.3,chg:-0.1},
+  {name:"食品通路",sector:"必需消費",net:-0.3,chg:-0.45},
+  {name:"服飾與精品",sector:"非必需消費",net:-0.31,chg:0.18},
+  {name:"營建機械與重型設備",sector:"工業",net:-0.32,chg:0.23},
+  {name:"鋁業",sector:"原物料",net:-0.32,chg:-0.32},
+  {name:"資料處理服務",sector:"資訊科技",net:-0.34,chg:0.37},
+  {name:"醫療服務",sector:"醫療保健",net:-0.34,chg:-0.42},
+  {name:"服飾零售",sector:"非必需消費",net:-0.34,chg:0.08},
+  {name:"航空貨運與物流",sector:"工業",net:-0.35,chg:-0.87},
+  {name:"鋼鐵",sector:"原物料",net:-0.36,chg:-0.42},
+  {name:"多元控股",sector:"金融",net:-0.37,chg:0.03},
+  {name:"煤炭與燃料",sector:"能源",net:-0.37,chg:-0.74},
+  {name:"住宅不動產信託",sector:"房地產",net:-0.37,chg:-0.09},
+  {name:"辦公室不動產信託",sector:"房地產",net:-0.37,chg:-0.37},
+  {name:"人力資源服務",sector:"工業",net:-0.39,chg:0.33},
+  {name:"醫療通路",sector:"醫療保健",net:-0.4,chg:0.82},
+  {name:"天然氣公用",sector:"公用事業",net:-0.4,chg:-0.29},
+  {name:"醫療不動產信託",sector:"房地產",net:-0.4,chg:-0.38},
+  {name:"紙類與塑膠包裝",sector:"原物料",net:-0.4,chg:0.13},
+  {name:"營造與工程",sector:"工業",net:-0.41,chg:0.16},
+  {name:"石油及天然氣中游",sector:"能源",net:-0.41,chg:-0.68},
+  {name:"研究顧問服務",sector:"工業",net:-0.43,chg:0.16},
+  {name:"住宅建商",sector:"非必需消費",net:-0.44,chg:0.55},
+  {name:"專門店",sector:"非必需消費",net:-0.44,chg:-0.72},
+  {name:"綜合零售",sector:"非必需消費",net:-0.59,chg:-0.29},
+  {name:"家庭清潔用品",sector:"必需消費",net:-0.66,chg:-0.28},
+  {name:"零售不動產信託",sector:"房地產",net:-0.66,chg:0.24},
+  {name:"特用化學",sector:"原物料",net:-0.68,chg:-0.65},
+  {name:"軟性飲料",sector:"必需消費",net:-0.88,chg:-0.02},
+  {name:"民生零售",sector:"必需消費",net:-0.91,chg:-0.09},
+  {name:"醫療設備",sector:"醫療保健",net:-1.02,chg:-0.15},
+  {name:"餐飲",sector:"非必需消費",net:-1.17,chg:-0.57},
+  {name:"產險",sector:"金融",net:-1.43,chg:-0.07},
+  {name:"石油煉製與行銷",sector:"能源",net:-1.53,chg:-0.33},
+  {name:"菸草",sector:"必需消費",net:-1.68,chg:-0.12},
+  {name:"包裝食品與肉品",sector:"必需消費",net:-1.72,chg:0.47},
+  {name:"區域銀行",sector:"金融",net:-1.79,chg:-0.16},
+  {name:"健康保險",sector:"醫療保健",net:-2.28,chg:0.18},
+  {name:"壽險",sector:"金融",net:-2.68,chg:-0.19},
+  {name:"製藥",sector:"醫療保健",net:-2.84,chg:-0.69},
+  {name:"石油及天然氣勘探與開發",sector:"能源",net:-3.7,chg:-0.16},
+  {name:"綜合銀行",sector:"金融",net:-5.41,chg:-0.41},
+  {name:"石油及天然氣綜合",sector:"能源",net:-7.27,chg:0.36}
+ ]
+};
+
+const DEMOS = {tw:DEMO_TW, us:DEMO_US};
+
+/* 示範用的歷史（台股最近 14 個交易日）。放上 GitHub Pages 時會被
+   ./data/history_tw.json 覆蓋，那份有 30 天。 */
+const DEMO_HIST = {tw:{"names":["光電業","半導體業","金融保險","航運業","鋼鐵工業","水泥工業","塑膠工業","化學工業","通信網路業","紡織纖維","電腦及週邊","其他業","電子零組件","其他電子業","食品工業","貿易百貨","玻璃陶瓷","電機機械","資訊服務業","汽車工業","建材營造","電子通路業","生技醫療","油電燃氣","運動休閒","觀光餐旅","綠能環保","造紙工業","電器電纜","橡膠工業","數位雲端","居家生活"],"sectors":["電子","電子","金融","運輸","原物料","原物料","原物料","原物料","電子","民生","電子","其他","電子","電子","民生","民生","原物料","工業","電子","工業","營建","電子","醫療","公用","民生","服務","工業","原物料","工業","原物料","電子","民生"],"days":[{"d":"2026-08-18","r":[[2,26.72,0.99],[3,57.7,2.37],[10,-6.62,-0.78],[20,4.05,1.17],[0,-21.52,-3.71],[12,167.17,-0.84],[9,-1.87,-1.42],[6,0.02,0.0],[21,-5.37,1.18],[14,5.81,1.32],[7,0.08,-2.2],[26,-0.08,-0.6],[1,-228.86,-3.24],[8,-17.94,-2.19],[29,1.22,0.82],[11,-1.45,-1.06],[23,0.5,1.03],[15,0.91,0.37],[4,-0.44,-0.61],[22,7.92,-0.59],[18,1.3,-0.14],[17,-6.3,-0.52],[5,-0.85,-0.47],[19,-0.11,-1.65],[13,-47.17,-2.34],[28,-0.51,-2.74],[16,-3.01,-3.45],[31,0.18,-0.16],[25,-0.27,-0.85],[24,-1.91,-1.35],[30,-0.05,-0.86],[27,-0.23,-2.0]]},{"d":"2026-08-19","r":[[3,30.77,0.97],[8,11.55,-0.76],[2,-20.95,-1.4],[14,10.96,1.56],[0,-31.9,-3.33],[5,2.56,0.86],[9,3.04,-0.56],[20,4.56,0.67],[4,3.93,0.51],[16,1.74,0.51],[17,1.92,-2.5],[12,-96.73,-0.35],[18,7.3,1.44],[15,5.62,1.7],[13,-63.79,-3.5],[24,4.24,5.51],[10,-14.47,-0.25],[29,1.28,-0.33],[11,2.78,0.47],[7,0.5,0.8],[27,0.77,1.02],[1,-368.51,-2.43],[19,2.29,0.31],[21,-13.22,-1.85],[22,-3.45,0.54],[25,0.72,1.01],[31,0.43,-0.34],[28,0.07,-0.45],[26,-1.84,-2.93],[6,-16.46,-4.65],[23,-3.35,-2.3],[30,-0.13,-0.6]]},{"d":"2026-08-20","r":[[3,111.17,3.23],[4,9.72,1.91],[1,69.73,1.97],[9,11.02,3.59],[5,11.18,2.85],[2,-10.85,-1.0],[14,11.78,0.93],[12,-57.41,-0.88],[8,1.11,1.44],[23,6.02,3.89],[24,4.31,1.34],[6,-4.64,0.39],[29,2.4,1.55],[17,-5.33,2.02],[15,3.54,1.07],[0,-6.49,1.59],[20,6.96,1.43],[22,7.06,4.28],[7,1.02,0.93],[26,1.34,-1.74],[19,3.18,1.32],[21,-9.81,-0.8],[11,3.61,1.79],[10,-73.45,-1.6],[13,-24.23,0.2],[27,0.54,2.27],[31,1.02,1.35],[18,0.18,1.06],[28,-0.38,0.32],[25,1.0,1.36],[16,-1.61,0.76],[30,-0.26,-0.78]]},{"d":"2026-08-21","r":[[3,58.23,3.55],[2,86.81,3.12],[9,7.01,3.36],[1,221.71,1.49],[4,3.68,0.62],[6,6.37,3.18],[14,8.9,-0.64],[11,9.24,2.83],[5,2.96,0.65],[0,-24.55,1.74],[20,6.06,1.7],[8,-3.07,-1.23],[12,-12.99,-3.32],[10,-28.36,-1.38],[7,1.4,2.66],[15,6.76,1.38],[23,1.12,3.72],[28,0.79,0.81],[29,1.3,2.21],[21,-0.48,1.31],[27,0.96,1.51],[19,0.99,0.01],[24,1.3,0.44],[22,4.72,0.75],[26,0.53,3.94],[13,-37.91,-0.66],[25,1.51,3.05],[17,-24.24,-4.68],[31,0.07,-0.33],[16,0.53,-0.15],[18,-0.14,-0.1],[30,0.22,-0.37]]},{"d":"2026-08-24","r":[[1,-14.19,0.02],[10,57.57,4.12],[3,61.52,0.0],[0,-23.48,-0.8],[2,-26.54,-1.77],[21,5.59,0.63],[8,3.66,-0.58],[28,2.71,1.93],[14,2.88,-0.52],[13,-64.12,-5.65],[20,-1.48,-1.22],[4,0.76,1.91],[26,-2.05,-0.19],[11,1.98,-0.61],[12,12.4,-1.4],[29,-0.05,-0.99],[9,0.01,-1.79],[15,0.67,-0.39],[18,1.74,0.61],[24,0.3,-1.94],[19,0.29,-1.13],[27,-0.05,-1.09],[25,0.31,2.35],[5,-0.39,-0.52],[7,-5.25,-2.39],[17,-13.38,-1.39],[22,-2.34,1.09],[16,-0.12,-1.55],[31,-0.23,-2.49],[30,-0.0,-0.67],[6,-76.16,-5.64],[23,-13.77,-7.63]]},{"d":"2026-08-25","r":[[2,74.3,3.62],[0,2.32,4.21],[3,28.6,1.23],[14,7.89,0.6],[6,18.14,3.95],[8,15.35,3.22],[12,1.93,1.5],[23,2.6,1.55],[24,1.08,0.38],[1,-76.01,0.24],[5,0.05,-0.05],[21,-7.08,-0.9],[10,-12.74,1.03],[16,1.27,1.8],[11,1.0,-1.25],[29,-0.06,-1.09],[7,-2.0,-1.22],[9,2.45,-0.07],[20,1.61,-0.15],[17,-10.49,4.01],[28,0.08,0.24],[15,1.86,0.09],[22,-5.1,2.51],[27,0.01,-0.55],[18,0.73,0.15],[4,-2.53,-1.05],[13,-40.64,-0.14],[19,0.46,-0.04],[31,0.72,1.84],[26,-2.03,-2.19],[25,0.37,0.2],[30,0.16,0.19]]},{"d":"2026-08-26","r":[[1,289.75,2.72],[2,12.82,0.46],[3,0.52,-5.81],[6,43.34,7.07],[16,9.42,2.95],[28,5.56,2.46],[12,-8.37,4.47],[0,-10.32,4.16],[4,3.14,1.76],[10,20.16,3.09],[8,-3.95,1.0],[5,-1.81,-0.47],[29,0.35,1.57],[11,2.32,2.5],[7,4.0,4.41],[13,-27.52,-0.42],[14,2.11,-0.04],[21,-11.59,-0.59],[20,1.82,0.89],[26,-0.08,-0.07],[9,-2.81,-0.93],[27,0.19,0.03],[22,11.78,4.71],[15,0.29,0.03],[17,-4.54,0.08],[24,-0.99,0.12],[19,0.24,0.45],[25,-0.06,0.79],[23,-2.33,-0.76],[18,-0.43,-0.09],[31,0.24,1.37],[30,0.12,1.11]]},{"d":"2026-08-27","r":[[1,287.31,1.35],[6,33.12,6.31],[2,16.16,0.33],[13,37.69,2.23],[3,15.0,0.67],[7,6.04,1.8],[17,19.05,5.51],[0,26.62,4.37],[12,28.96,3.15],[23,5.24,3.13],[28,4.33,0.03],[11,1.71,0.88],[10,-24.04,0.5],[9,0.64,-0.02],[14,2.11,-0.53],[8,-4.17,0.1],[20,-0.6,-0.19],[5,-2.49,-0.74],[27,0.26,0.04],[19,0.71,0.99],[4,-2.63,-1.48],[29,-0.28,-1.05],[15,0.11,-1.06],[24,-0.22,0.7],[18,0.23,1.13],[22,-1.04,-1.35],[26,-1.35,-0.47],[21,-15.1,-1.23],[30,-0.03,0.32],[31,-0.01,-1.11],[16,-3.39,-0.84],[25,-0.42,-1.47]]},{"d":"2026-08-28","r":[[1,192.8,4.19],[2,48.77,2.69],[0,91.88,3.85],[6,60.48,-2.86],[16,6.74,2.38],[7,10.06,1.6],[10,13.56,1.77],[5,0.42,0.01],[12,61.11,1.41],[28,1.29,0.18],[26,-0.14,-0.52],[3,-46.91,-2.77],[29,-2.39,-1.0],[8,-13.8,0.61],[13,-31.16,-3.38],[19,-1.43,-1.46],[4,-4.34,-0.69],[9,-3.47,-1.46],[27,-0.22,-1.49],[14,-2.6,-1.3],[15,-1.79,-1.16],[20,-5.53,-1.51],[22,-9.88,-1.93],[17,-40.14,-2.6],[11,-11.24,-2.9],[18,-0.7,-0.58],[25,-0.23,-0.47],[30,-0.15,-1.17],[24,-5.53,-1.75],[21,-7.92,-0.77],[23,-0.96,-1.53],[31,-0.09,-0.7]]},{"d":"2026-08-31","r":[[1,-283.72,-2.37],[0,22.07,4.13],[2,84.53,2.74],[6,60.33,8.58],[7,14.65,3.9],[3,2.1,3.25],[10,18.74,1.08],[12,-5.18,-3.45],[24,1.87,1.43],[13,-6.79,-1.95],[8,-8.51,1.0],[23,1.67,2.45],[14,1.01,0.16],[19,0.08,0.86],[11,-0.07,0.68],[29,0.0,-0.08],[28,0.76,0.14],[9,0.08,-0.04],[4,-0.58,0.05],[18,2.98,1.31],[20,-3.21,-0.3],[27,0.23,0.7],[30,0.34,2.31],[15,-1.11,-1.29],[22,-33.47,-6.99],[25,-0.13,0.45],[17,-18.58,-4.03],[16,-1.34,-0.12],[26,-0.21,-0.45],[31,0.28,1.52],[21,-5.99,-1.06],[5,-1.28,0.39]]},{"d":"2026-09-01","r":[[6,37.77,5.91],[2,52.64,2.28],[5,7.71,3.2],[1,-132.03,-0.05],[13,59.04,2.85],[12,68.03,2.83],[7,12.61,3.08],[10,26.91,3.76],[9,-0.27,3.41],[3,8.21,-0.03],[23,4.08,4.17],[17,21.17,3.84],[4,1.13,0.99],[16,2.11,0.76],[14,1.65,-0.1],[0,24.65,0.56],[8,10.21,1.2],[20,1.09,0.49],[29,0.61,1.05],[21,-2.12,0.99],[11,-4.9,-1.33],[19,0.75,2.05],[26,1.01,5.46],[27,-0.02,-0.59],[24,-0.49,-0.74],[25,-0.43,-0.47],[22,-24.47,-4.7],[18,-0.64,-0.53],[28,-1.47,-0.9],[30,-0.26,-0.67],[15,-1.98,-0.24],[31,-0.13,-0.18]]},{"d":"2026-09-02","r":[[2,59.13,1.41],[1,-453.64,-2.41],[10,-23.99,0.7],[13,-59.9,-2.89],[0,47.97,3.42],[8,19.7,1.13],[3,-6.96,-0.52],[14,3.46,0.54],[20,1.14,-0.2],[9,0.07,0.09],[7,-8.77,-3.68],[27,0.23,2.12],[6,2.07,0.03],[11,-1.08,-0.12],[17,-13.53,-0.72],[12,-372.75,-5.08],[28,-0.79,-1.05],[21,-20.04,-3.27],[26,-2.45,-2.99],[15,0.46,1.08],[29,-0.42,-0.64],[4,-2.06,0.0],[18,1.25,0.39],[19,-1.49,-0.33],[25,0.6,0.81],[22,-15.7,-1.17],[30,-0.23,-1.14],[24,-1.07,-0.49],[23,-6.18,2.53],[5,-6.19,-1.91],[16,-0.7,-0.79],[31,-0.17,-0.18]]},{"d":"2026-09-03","r":[[0,-27.25,-5.44],[2,70.61,2.43],[1,-269.42,-4.1],[10,-17.74,-2.3],[3,30.98,1.73],[8,37.99,-1.29],[4,4.1,0.45],[6,-7.05,-5.31],[20,4.5,1.02],[13,-34.72,-3.69],[28,1.01,-1.5],[5,-0.19,-0.29],[12,-154.85,-5.79],[7,-2.39,-3.0],[11,-4.85,-2.39],[9,0.29,-1.0],[14,-0.11,-0.32],[15,0.34,-0.05],[22,-1.6,-0.79],[27,0.04,-0.01],[29,-0.2,-1.02],[26,1.89,4.99],[24,-1.46,-1.31],[19,-1.4,-1.3],[16,-3.21,-3.58],[17,-20.69,-3.58],[30,-0.49,-0.83],[23,-5.61,-2.78],[31,-0.11,-0.82],[18,-1.71,-0.27],[25,-0.2,-0.82],[21,-15.93,-0.48]]},{"d":"2026-09-04","r":[[10,266.23,5.31],[13,62.22,2.79],[1,36.38,1.95],[12,123.82,5.27],[2,44.61,0.8],[0,-6.97,4.29],[21,-2.38,1.34],[4,-0.88,0.1],[8,-2.65,0.49],[7,-0.91,0.85],[14,1.58,0.14],[17,7.43,5.05],[16,-0.55,0.95],[23,-0.72,1.9],[20,0.24,0.13],[3,-18.41,-1.9],[19,1.29,1.93],[11,-3.57,0.35],[24,0.05,0.63],[9,1.02,0.05],[18,1.28,1.71],[28,-0.06,0.88],[29,-0.17,0.37],[30,0.39,2.2],[22,-11.09,-1.83],[15,-0.29,0.31],[5,-1.51,0.44],[6,-15.77,1.59],[27,-0.37,-1.21],[26,-1.34,0.5],[31,-0.25,-0.34],[25,-0.09,0.05]]}]}, us:null};
+
+/* ===================== 狀態 ===================== */
+const S = {data:null,algo:"greedy",top:"all",spin:true,sel:null,market:"tw",win:1,
+           store:{tw:null,us:null}, live:{tw:false,us:false},
+           hist:{tw:null,us:null}, persist:[], sectors:[], winLabel:"",
+           yaw:0.5,pitch:-0.16,nodes:[],flows:[],stats:null,byName:new Map()};
+const RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+if (RM) S.spin = false;
+
+const $ = id => document.getElementById(id);
+const fmt = v => { const a = Math.abs(v);
+  if (a >= 10000) return (v/10000).toFixed(2)+"兆";
+  if (a < 0.01) return (v*10000).toFixed(0)+"萬";
+  return v.toFixed(2)+"億"; };
+const pct = v => (v>0?"+":"")+v.toFixed(2)+"%";
+const norm = p => { const m = Math.hypot(p[0],p[1],p[2])||1; return [p[0]/m,p[1]/m,p[2]/m]; };
+
+function fibPoint(n,i){
+  if (n === 1) return [0,0,1];
+  const y = 1 - (i/(n-1))*2, r = Math.sqrt(Math.max(0,1-y*y));
+  const th = i*Math.PI*(3-Math.sqrt(5));
+  return [Math.cos(th)*r, y, Math.sin(th)*r];
+}
+
+/* ===================== 球面佈點 ===================== */
+function layout(rows){
+  const bySec = new Map();
+  rows.forEach(r => { if(!bySec.has(r.sector)) bySec.set(r.sector,[]); bySec.get(r.sector).push(r); });
+  const secs = [...bySec.keys()].sort((a,b)=>bySec.get(b).length-bySec.get(a).length);
+  // 費波那契點依離赤道遠近重排：成員最多的族群拿到中緯度最開闊的位置
+  const slots = secs.map((_,k)=>fibPoint(secs.length,k)).sort((a,b)=>Math.abs(a[1])-Math.abs(b[1]));
+  const nodes = [];
+  secs.forEach((sec,si) => {
+    const c = slots[si];
+    const helper = Math.abs(c[1]) < 0.92 ? [0,1,0] : [1,0,0];
+    const u = norm([c[1]*helper[2]-c[2]*helper[1], c[2]*helper[0]-c[0]*helper[2], c[0]*helper[1]-c[1]*helper[0]]);
+    const v = [c[1]*u[2]-c[2]*u[1], c[2]*u[0]-c[0]*u[2], c[0]*u[1]-c[1]*u[0]];
+    const mem = bySec.get(sec).slice().sort((a,b)=>Math.abs(b.net)-Math.abs(a.net));
+    const m = mem.length;
+    const centerFirst = m >= 5;
+    const ringN = centerFirst ? m-1 : m;
+    const spread = m === 1 ? 0 : Math.min(0.17 + 0.036*m, 0.40);
+    mem.forEach((r,k) => {
+      let p;
+      if (m === 1 || (centerFirst && k === 0)) p = c.slice();
+      else {
+        const idx = centerFirst ? k-1 : k;
+        const a = (idx/ringN)*Math.PI*2 + si*0.9;
+        const sp = spread * (ringN > 4 && idx % 2 ? 0.58 : 1);
+        const cs = Math.cos(sp), sn = Math.sin(sp);
+        p = norm([c[0]*cs + (u[0]*Math.cos(a)+v[0]*Math.sin(a))*sn,
+                  c[1]*cs + (u[1]*Math.cos(a)+v[1]*Math.sin(a))*sn,
+                  c[2]*cs + (u[2]*Math.cos(a)+v[2]*Math.sin(a))*sn]);
+      }
+      nodes.push({...r, p, matched:0, unmatched:0});
+    });
+  });
+  return nodes;
+}
+
+/* ===================== 配對演算法 ===================== */
+function computeFlows(nodes, algo){
+  const OUT = nodes.filter(n=>n.net<0).map(n=>({n,cap:-n.net}));
+  const INN = nodes.filter(n=>n.net>0).map(n=>({n,cap:n.net}));
+  const SO = OUT.reduce((s,x)=>s+x.cap,0), SI = INN.reduce((s,x)=>s+x.cap,0);
+  const M = Math.min(SO,SI);
+  nodes.forEach(n=>{n.matched=0;n.unmatched=0;});
+  if (!M || !OUT.length || !INN.length) return {flows:[],SO,SI,M};
+
+  // 兩邊都縮到可配對總量 M，保證守恆
+  const o = OUT.map(x=>({n:x.n,r:x.cap*M/SO}));
+  const i = INN.map(x=>({n:x.n,r:x.cap*M/SI}));
+  const flows = [], eps = M*1e-9;
+  const push = (a,b,v)=>{ if (v > M*1e-6) flows.push({from:a,to:b,v}); };
+
+  if (algo === "gravity"){
+    o.forEach(a => i.forEach(b => push(a.n,b.n,a.r*b.r/M)));
+  } else if (algo === "transport"){
+    const pairs = [];
+    o.forEach((a,ai) => i.forEach((b,bi) =>
+      pairs.push([a.n.sector === b.n.sector ? 0.25 : 1.0, ai, bi])));
+    pairs.sort((x,y)=>x[0]-y[0]);
+    for (const [,ai,bi] of pairs){
+      const v = Math.min(o[ai].r, i[bi].r);
+      if (v <= eps) continue;
+      o[ai].r -= v; i[bi].r -= v; push(o[ai].n, i[bi].n, v);
+    }
+  } else {
+    const oi = o.map((_,k)=>k).sort((x,y)=>o[y].r-o[x].r);
+    const ii = i.map((_,k)=>k).sort((x,y)=>i[y].r-i[x].r);
+    let p = 0, q = 0, guard = 0;
+    while (p < oi.length && q < ii.length && guard++ < 40000){
+      const a = oi[p], b = ii[q];
+      const v = Math.min(o[a].r, i[b].r);
+      if (v > eps){ o[a].r -= v; i[b].r -= v; push(o[a].n, i[b].n, v); }
+      if (o[a].r <= eps) p++;
+      if (i[b].r <= eps) q++;
+    }
+  }
+  flows.forEach(f => { f.from.matched += f.v; f.to.matched += f.v; });
+  // 殘差落在「比較大」的那一側：流入大於流出時是找不到來源的流入，
+  // 流出大於流入時則是找不到去處的流出。兩種情況真實資料都會出現。
+  nodes.forEach(n => { n.unmatched = Math.max(0, Math.abs(n.net) - n.matched); });
+  return {flows,SO,SI,M};
+}
+
+/* 把最近 N 個交易日加總成一份「等效快照」，同時算出：
+   persist  每個產業在視窗內與累積方向相同的天數（持續性）
+   sectors  每個族群的淨流入強度 = Σnet / Σ|net|，範圍 −1 ~ +1，
+            除以絕對值總和是為了讓大小族群可以比較，看的是「相對」強弱   */
+function windowRows(){
+  const h = S.hist[S.market], n = S.win;
+  S.persist = []; S.sectors = []; S.winLabel = "";
+  if (n <= 1 || !h || !h.days || h.days.length < 2) return null;
+  const days = h.days.slice(-n);
+  if (days.length < 2) return null;
+
+  const sum = new Map(), signs = new Map(), chg = new Map();
+  for (const day of days){
+    for (const [i, net, c] of day.r){
+      const name = h.names[i];
+      sum.set(name, (sum.get(name)||0) + net);
+      chg.set(name, (chg.get(name)||0) + c);
+      if (!signs.has(name)) signs.set(name, []);
+      signs.get(name).push(net);
+    }
+  }
+  const rows = [];
+  for (const [name, net] of sum){
+    if (!net) continue;
+    const arr = signs.get(name);
+    const same = arr.filter(v => (v > 0) === (net > 0)).length;
+    rows.push({name, sector:h.sectors[h.names.indexOf(name)] || "未分類",
+               net:+net.toFixed(2), chg:+(chg.get(name)/arr.length).toFixed(2),
+               days:arr.length, same});
+  }
+  // 持續性排行：先看同向天數，再看金額，只留視窗內佔比夠高的
+  S.persist = rows.slice()
+    .filter(r => r.same / r.days >= 0.6)
+    .sort((a,b) => (b.same/b.days - a.same/a.days) || (Math.abs(b.net)-Math.abs(a.net)))
+    .slice(0, 5);
+
+  const sec = new Map();
+  for (const r of rows){
+    const s = sec.get(r.sector) || {net:0, abs:0, n:0};
+    s.net += r.net; s.abs += Math.abs(r.net); s.n++;
+    sec.set(r.sector, s);
+  }
+  S.sectors = [...sec].map(([name, s]) => ({name, score: s.abs ? s.net/s.abs : 0,
+                                            net:s.net, n:s.n}))
+                      .sort((a,b) => b.score - a.score);
+  S.winLabel = `${days[0].d.slice(5)} ~ ${days[days.length-1].d.slice(5)}`;
+  return rows;
+}
+
+function recompute(){
+  const win = windowRows();
+  const rows = win || S.data.industries.filter(r => typeof r.net === "number" && r.net !== 0);
+  S.nodes = layout(rows);
+  const {flows,SO,SI,M} = computeFlows(S.nodes, S.algo);
+  S.flows = flows.sort((a,b)=>b.v-a.v);
+  const base = Math.max(SO,SI);
+  S.stats = {SO, SI, M, count: rows.length,
+             side: SI >= SO ? "in" : "out",          // 殘差在哪一側
+             resid: base - M,
+             unmPct: base > 0 ? (base-M)/base*100 : 0};
+  S.byName = new Map(S.nodes.map(n=>[n.name,n]));
+  if (S.sel && !S.byName.has(S.sel)) S.sel = null;
+}
+function visibleFlows(){
+  let f = S.flows.filter(x => x.v > S.stats.M*0.0008);
+  if (S.sel) f = f.filter(x => x.from.name===S.sel || x.to.name===S.sel);
+  return f.slice(0, S.top === "all" ? 190 : parseInt(S.top,10));
+}
+
+/* ===================== 面板 ===================== */
+function ledger(id, list, sign){
+  const tb = $(id); tb.textContent = "";
+  const max = Math.max(...list.map(n=>Math.abs(n.net)), 1);
+  const frag = document.createDocumentFragment();
+  list.forEach((n,k) => {
+    const tr = document.createElement("tr"), td = document.createElement("td");
+    const b = document.createElement("button");
+    b.className = "row" + (S.sel===n.name ? " on" : ""); b.type = "button";
+    b.setAttribute("aria-pressed", String(S.sel===n.name));
+    const bar = document.createElement("span"); bar.className = "bar";
+    bar.style.width = (Math.abs(n.net)/max*100).toFixed(1)+"%";
+    const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = String(k+1).padStart(2,"0");
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = n.name;
+    const am = document.createElement("span"); am.className = "amt";
+    const bb = document.createElement("b"); bb.textContent = (sign<0?"−":"+")+fmt(Math.abs(n.net));
+    const ss = document.createElement("s");
+    if (S.win > 1 && n.days){        // 多日模式下，持續性比平均漲跌幅有用
+      ss.textContent = `${n.same}/${n.days} 天同向`;
+      ss.className = sign > 0 ? "up" : "dn";
+    } else {
+      ss.textContent = pct(n.chg||0);
+      ss.className = (n.chg||0) >= 0 ? "up" : "dn";
+    }
+    am.append(bb,ss); b.append(bar,rk,nm,am);
+    b.addEventListener("click", ()=>{ S.sel = (S.sel===n.name)?null:n.name; paintPanels(); });
+    td.append(b); tr.append(td); frag.append(tr);
+  });
+  tb.append(frag);
+}
+
+function paintPanels(){
+  const st = S.stats;
+  const outs = S.nodes.filter(n=>n.net<0).sort((a,b)=>a.net-b.net);
+  const ins  = S.nodes.filter(n=>n.net>0).sort((a,b)=>b.net-a.net);
+  ledger("outBody", outs, -1); ledger("inBody", ins, +1);
+  $("outTot").textContent = "−"+fmt(st.SO);
+  $("inTot").textContent  = "+"+fmt(st.SI);
+  $("outSub").textContent = `錢正在離開這些產業 · 共 ${outs.length} 個`;
+  $("inSub").textContent  = `錢正在進入這些產業 · 共 ${ins.length} 個`;
+  $("unmPct").textContent = st.unmPct.toFixed(0)+"%";
+  $("unmCap").textContent = st.side === "in"
+    ? "流入當中，找不到對應流出的比例"
+    : "流出當中，找不到對應流入的比例";
+  $("s1").textContent = fmt(st.SI);
+  $("s2").textContent = "−"+fmt(st.SO);
+  $("s3").textContent = fmt(st.M);
+  const mt = S.data.meta || {};
+  $("snapT").textContent = S.win > 1 ? `${S.win} 日累積` : (mt.snapshot || "—");
+  $("snapN").textContent = st.count;
+  // 三種狀態要分清楚：抓到的即時資料、內嵌的真實快照、模擬的示範資料
+  const chip = $("srcChip");
+  const isDemo = /示範/.test(mt.source || "");
+  const state = S.live[S.market] ? ["lv","即時資料"] : isDemo ? ["dm","示範資料"] : ["sn","靜態快照"];
+  chip.className = "chip " + state[0];
+  chip.textContent = state[1];
+  chip.title = mt.source || "";
+  $("eyebrow").textContent = [mt.market||"—",
+    S.win > 1 ? `${S.win} 個交易日累積 ${S.winLabel}` : (mt.freq||"—"),
+    mt.unit||"億元"].join(" · ");
+  const to = outs[0], ti = ins[0];
+  if (to && ti){
+    $("headline").textContent = S.win > 1
+      ? `${S.win} 日累積：資金持續撤出${to.sector}，流向${ti.sector}`
+      : `資金正撤出${to.sector}，湧向${ti.sector}`;
+    const big = st.side === "in" ? "流入" : "流出", small = st.side === "in" ? "流出" : "流入";
+    $("subhead").innerHTML = `最大單筆流出是${to.name}的 −${fmt(-to.net)}，最大單筆流入是${ti.name}的 `+
+      `+${fmt(ti.net)}。兩者差距很大，代表${big}有 <b>${st.unmPct.toFixed(0)}%</b> 在這份資料裡找不到`+
+      `對應的${small}，所以畫面上的軌跡只解釋得了其中一部分。`;
+  }
+  paintInsight();
+  paintDetail();
+}
+
+function paintInsight(){
+  const pl = $("persistList"), sl = $("sectorList");
+  pl.textContent = ""; sl.textContent = "";
+  $("insWin").textContent = S.win <= 1 ? "單日" : `${S.win} 日 · ${S.winLabel}`;
+
+  if (S.win <= 1 || !S.persist.length){
+    const e = document.createElement("div"); e.className = "ins-empty";
+    e.textContent = S.hist[S.market]
+      ? "切到「5 日」或「10 日」才會出現持續性與族群強弱。"
+      : "這個市場還沒有歷史資料。";
+    pl.append(e);
+    const e2 = e.cloneNode(true); e2.textContent = " "; sl.append(e2);
+    return;
+  }
+
+  // 持續同向：幾天當中有幾天跟累積方向一致
+  for (const r of S.persist){
+    const inflow = r.net > 0;
+    const row = document.createElement("div"); row.className = "ins-row";
+    row.style.cursor = "pointer";
+    const nm = document.createElement("span"); nm.className = "nm";
+    nm.textContent = r.name;
+    const dots = document.createElement("span"); dots.className = "dots";
+    for (let k = 0; k < r.days; k++){
+      const i = document.createElement("i");
+      if (k < r.same){ i.className = "on"; i.style.background = inflow ? "var(--in-g)" : "var(--out-g)"; }
+      dots.append(i);
+    }
+    nm.append(dots);
+    const v = document.createElement("span"); v.className = "v";
+    v.textContent = `${r.same}/${r.days}`;
+    v.style.color = inflow ? "var(--in-g)" : "var(--out-g)";
+    row.append(nm, v);
+    row.addEventListener("click", () => { S.sel = (S.sel === r.name) ? null : r.name; paintPanels(); });
+    pl.append(row);
+  }
+
+  // 族群強弱：Σnet ÷ Σ|net|，−1 ~ +1
+  const top = S.sectors.length > 6
+    ? [...S.sectors.slice(0, 3), null, ...S.sectors.slice(-3)]
+    : S.sectors;
+  for (const s of top){
+    if (!s){
+      const gap = document.createElement("div");
+      gap.className = "ins-empty"; gap.style.padding = "0"; gap.textContent = "⋮";
+      sl.append(gap); continue;
+    }
+    const row = document.createElement("div"); row.className = "ins-row";
+    const nm = document.createElement("span"); nm.className = "nm";
+    nm.textContent = s.name;
+    // 只有一個產業的族群，分數必然是 ±1，標出檔數才不會被誤讀
+    const cnt = document.createElement("span");
+    cnt.style.cssText = "color:var(--ink3);font-family:var(--mono);font-size:9.5px;margin-left:5px";
+    cnt.textContent = `${s.n}`;
+    nm.append(cnt);
+    const v = document.createElement("span"); v.className = "v";
+    v.textContent = (s.score > 0 ? "+" : "") + s.score.toFixed(2);
+    v.style.color = s.score >= 0 ? "var(--in-g)" : "var(--out-g)";
+    row.append(nm, v);
+    sl.append(row);
+    const bar = document.createElement("div"); bar.className = "sbar";
+    const mid = document.createElement("span"); mid.className = "mid";
+    const fill = document.createElement("span"); fill.className = "fill";
+    const w = Math.min(50, Math.abs(s.score) * 50);
+    if (s.score >= 0){ fill.style.left = "50%"; fill.style.background = "var(--in)"; }
+    else { fill.style.right = "50%"; fill.style.background = "var(--out)"; }
+    fill.style.width = w + "%";
+    bar.append(mid, fill);
+    sl.append(bar);
+  }
+}
+
+function paintDetail(){
+  const d = $("detail"); d.textContent = "";
+  const n = S.sel ? S.byName.get(S.sel) : null;
+  if (!n){
+    const p = document.createElement("p"); p.className = "idle";
+    p.textContent = "點球面上任一亮點，或左右任一列。選中之後，只會留下跟它有關的軌跡。";
+    d.append(p); return;
+  }
+  const inflow = n.net > 0;
+  const mk = (c,t)=>{ const e = document.createElement("div"); e.className = c; e.textContent = t; return e; };
+  d.append(mk("sect", n.sector), mk("nm", n.name));
+  const amt = mk("amt", (inflow?"+":"−")+fmt(Math.abs(n.net)));
+  amt.style.color = inflow ? "var(--in-g)" : "var(--out-g)";
+  d.append(amt);
+  const pool = S.nodes.filter(x => inflow ? x.net>0 : x.net<0)
+                      .sort((a,b)=> inflow ? b.net-a.net : a.net-b.net);
+  const dl = document.createElement("dl");
+  const add = (k,v,c)=>{ const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = v; if(c) dd.style.color = c; dl.append(dt,dd); };
+  if (S.win > 1 && n.days)
+    add("同向天數", `${n.same} / ${n.days}`, inflow ? "var(--in-g)" : "var(--out-g)");
+  add(S.win > 1 ? "平均漲跌幅" : "漲跌幅", pct(n.chg||0),
+      (n.chg||0)>=0 ? "var(--in-g)" : "var(--out-g)");
+  add("金額排名", `第 ${pool.findIndex(x=>x.name===n.name)+1} / ${pool.length}`);
+  add("已配對", fmt(n.matched));
+  if (n.unmatched > 0)
+    add(inflow ? "無法配對的流入" : "無法配對的流出", fmt(n.unmatched), "var(--unm-g)");
+  add("相關軌跡", S.flows.filter(f => (f.from.name===n.name||f.to.name===n.name) && f.v>S.stats.M*8e-4).length + " 條");
+  d.append(dl);
+}
+
+/* ===================== 畫布 ===================== */
+const cvs = $("sky"), ctx = cvs.getContext("2d");
+let W=0,H=0,R=0,CX=0,CY=0,DPR=1;
+let stars = [], surface = [], dust = [];
+
+function buildDecor(){
+  stars = [];
+  for (let k=0;k<210;k++) stars.push({x:Math.random(),y:Math.random(),
+    r:Math.random()*0.85+0.22, a:Math.random()*0.35+0.08});
+  // 球面裝飾網點（非資料，只是質感）
+  surface = [];
+  for (let k=0;k<520;k++) surface.push(fibPoint(520,k));
+  // 球外飄散的塵埃
+  dust = [];
+  for (let k=0;k<120;k++){
+    const p = fibPoint(120,k), rr = 1.06 + Math.random()*0.5;
+    dust.push([p[0]*rr, p[1]*rr, p[2]*rr]);
+  }
+}
+
+function resize(){
+  const box = cvs.parentElement.getBoundingClientRect();
+  const w = Math.max(260, box.width), h = Math.max(240, box.height);
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  cvs.width = Math.round(w*DPR); cvs.height = Math.round(h*DPR);
+  W = w; H = h; CX = w/2; CY = h/2; R = Math.min(w,h)*0.40;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+function rot(p){
+  const cy = Math.cos(S.yaw), sy = Math.sin(S.yaw);
+  const x = p[0]*cy + p[2]*sy, z = -p[0]*sy + p[2]*cy;
+  const cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
+  return [x, p[1]*cp - z*sp, p[1]*sp + z*cp];
+}
+const D = 3.6, FL = 2.85;
+function proj(q){ const s = FL/(D-q[2]); return [CX + q[0]*s*R, CY - q[1]*s*R]; }
+const occluded = q => q[2] < 0 && (q[0]*q[0]+q[1]*q[1]) < 1;
+
+function arcPath(a,b){
+  const mid = [a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+  const mm = Math.hypot(mid[0],mid[1],mid[2]);
+  const ang = Math.acos(Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1]+a[2]*b[2])));
+  const c = mm < 1e-6
+    ? norm([a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]])
+    : [mid[0]/mm, mid[1]/mm, mid[2]/mm];
+  // 二次貝茲中點 = 0.25(p0+p1)+0.5·ctrl，反推控制點半徑讓弧頂固定在 h（永遠在球外）
+  const h = 1.08 + 0.29*(ang/Math.PI);
+  const L = 2*h - Math.cos(ang/2);
+  const ctrl = [c[0]*L, c[1]*L, c[2]*L];
+  const out = [], N = 26;
+  for (let k=0;k<=N;k++){
+    const t = k/N, u = 1-t;
+    const q = rot([u*u*a[0]+2*u*t*ctrl[0]+t*t*b[0],
+                   u*u*a[1]+2*u*t*ctrl[1]+t*t*b[1],
+                   u*u*a[2]+2*u*t*ctrl[2]+t*t*b[2]]);
+    out.push({s:proj(q), hid:occluded(q)});
+  }
+  return out;
+}
+
+// 把弧線中「被球擋住 / 沒被擋住」的段落分開描邊，才有真正的前後遮蔽
+function strokeArc(pts, hid, grad, w, alpha){
+  ctx.strokeStyle = grad; ctx.globalAlpha = alpha; ctx.lineWidth = w;
+  ctx.beginPath();
+  let pen = false;
+  for (const p of pts){
+    if (p.hid !== hid){ pen = false; continue; }
+    if (!pen){ ctx.moveTo(p.s[0],p.s[1]); pen = true; } else ctx.lineTo(p.s[0],p.s[1]);
+  }
+  ctx.stroke();
+}
+
+function nodeGlow(x,y,r,rgb,a){
+  const g = ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,`rgba(${rgb},${a})`);
+  g.addColorStop(0.35,`rgba(${rgb},${a*0.32})`);
+  g.addColorStop(1,`rgba(${rgb},0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill();
+}
+
+const RGB_IN = "240,32,64", RGB_OUT = "0,168,123", RGB_UNM = "156,60,240";
+let hits = [];
+
+function draw(ts){
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#070A14"; ctx.fillRect(0,0,W,H);
+
+  // 背景星塵
+  ctx.fillStyle = "#8E9AB8";
+  for (const s of stars){ ctx.globalAlpha = s.a;
+    ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, 6.2832); ctx.fill(); }
+  ctx.globalAlpha = 1;
+
+  const flows = visibleFlows();
+  const vmax = flows.length ? flows[0].v : 1;
+  const arcs = flows.map(f => ({f, pts:arcPath(f.from.p, f.to.p)}));
+  const nmax = Math.max(...S.nodes.map(n=>Math.abs(n.net)), 1);
+  const nodes = S.nodes.map(n => ({n, q:rot(n.p)})).sort((a,b)=>a.q[2]-b.q[2]);
+  const surf = surface.map(p=>rot(p));
+  const dst  = dust.map(p=>rot(p));
+
+  const dimmed = n => S.sel && S.sel !== n.name &&
+    !S.flows.some(f => (f.from.name===S.sel&&f.to.name===n.name)||(f.to.name===S.sel&&f.from.name===n.name));
+
+  const paintArcs = hid => {
+    for (const {f,pts} of arcs){
+      const w = 0.35 + 1.5*Math.sqrt(f.v/vmax);
+      const a = pts[0].s, b = pts[pts.length-1].s;
+      const g = ctx.createLinearGradient(a[0],a[1],b[0],b[1]);
+      g.addColorStop(0, `rgb(${RGB_OUT})`);
+      g.addColorStop(0.5,"rgb(96,110,180)");
+      g.addColorStop(1, `rgb(${RGB_IN})`);
+      const base = hid ? 0.10 : (S.sel ? 0.95 : 0.62);
+      strokeArc(pts, hid, g, w*3.4, base*0.13);   // 外層暈
+      strokeArc(pts, hid, g, w,     base*0.85);   // 內層芯
+    }
+  };
+  const paintDots = (list, hid, rgb, a, r) => {
+    ctx.fillStyle = `rgba(${rgb},${a})`;
+    ctx.beginPath();
+    for (const q of list){
+      if (occluded(q) !== hid) continue;
+      const s = proj(q);
+      ctx.moveTo(s[0]+r, s[1]); ctx.arc(s[0],s[1],r,0,6.2832);
+    }
+    ctx.fill();
+  };
+  const paintNodes = hid => {
+    for (const {n,q} of nodes){
+      if (occluded(q) !== hid) continue;
+      const s = proj(q), inflow = n.net > 0;
+      const rad = 1.9 + 4.3*Math.sqrt(Math.abs(n.net)/nmax);
+      const fade = (hid ? 0.22 : 1) * (dimmed(n) ? 0.25 : 1);
+      hits.push({name:n.name, x:s[0], y:s[1], r:Math.max(rad,10), back:hid});
+      if (n.unmatched > 0){                 // 配不到對手的金額：紫色光環
+        const ur = rad + 2.5 + 6*Math.sqrt(n.unmatched/nmax);
+        ctx.globalAlpha = fade*0.5; ctx.strokeStyle = `rgb(${RGB_UNM})`; ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.arc(s[0],s[1],ur,0,6.2832); ctx.stroke();
+      }
+      const rgb = inflow ? RGB_IN : RGB_OUT;
+      ctx.globalAlpha = fade;
+      nodeGlow(s[0], s[1], rad*4.6, rgb, 0.5);
+      if (inflow){                          // 流入：實心
+        ctx.fillStyle = `rgb(${rgb})`;
+        ctx.beginPath(); ctx.arc(s[0],s[1],rad,0,6.2832); ctx.fill();
+        ctx.fillStyle = "rgba(255,225,232,.85)";
+        ctx.beginPath(); ctx.arc(s[0],s[1],rad*0.42,0,6.2832); ctx.fill();
+      } else {                              // 流出：空心環（給色覺障礙的第二重編碼）
+        ctx.strokeStyle = `rgb(${rgb})`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(s[0],s[1],rad,0,6.2832); ctx.stroke();
+      }
+      if (S.sel === n.name){
+        ctx.globalAlpha = 1; ctx.strokeStyle = "rgba(232,236,248,.9)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(s[0],s[1],rad+5,0,6.2832); ctx.stroke();
+      }
+    }
+  };
+
+  hits = [];
+  // ---- 後半球（加色混合做出輝光）----
+  ctx.globalCompositeOperation = "lighter";
+  paintDots(surf, true, "108,126,180", 0.10, 0.7);
+  paintArcs(true);
+  paintNodes(true);
+
+  // ---- 球體本身：不透明遮擋 + 星雲core ----
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  const body = ctx.createRadialGradient(CX,CY,0,CX,CY,R);
+  body.addColorStop(0,   "rgba(8,12,26,.94)");
+  body.addColorStop(0.78,"rgba(9,13,28,.88)");
+  body.addColorStop(1,   "rgba(9,13,28,0)");
+  ctx.fillStyle = body; ctx.beginPath(); ctx.arc(CX,CY,R,0,6.2832); ctx.fill();
+
+  ctx.globalCompositeOperation = "lighter";
+  const core = ctx.createRadialGradient(CX-R*0.22,CY-R*0.26,R*0.04,CX-R*0.1,CY-R*0.12,R*0.95);
+  core.addColorStop(0,   "rgba(96,126,214,.42)");
+  core.addColorStop(0.45,"rgba(52,72,150,.17)");
+  core.addColorStop(1,   "rgba(20,30,70,0)");
+  ctx.fillStyle = core; ctx.beginPath(); ctx.arc(CX,CY,R,0,6.2832); ctx.fill();
+
+  // ---- 前半球 ----
+  paintDots(surf, false, "138,158,222", 0.26, 0.75);
+  paintDots(dst,  false, "120,140,200", 0.16, 0.6);
+  paintArcs(false);
+  paintNodes(false);
+
+  // 邊緣光暈
+  const rim = ctx.createRadialGradient(CX,CY,R*0.88,CX,CY,R*1.1);
+  rim.addColorStop(0,"rgba(70,96,180,0)");
+  rim.addColorStop(0.62,"rgba(78,106,196,.16)");
+  rim.addColorStop(1,"rgba(70,96,180,0)");
+  ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(CX,CY,R*1.1,0,6.2832); ctx.fill();
+
+  // ---- 標籤 ----
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  ctx.font = '500 11px "Noto Sans TC",system-ui,sans-serif';
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const rank = S.nodes.slice().sort((a,b)=>Math.abs(b.net)-Math.abs(a.net));
+  const want = new Set(rank.slice(0,8).map(n=>n.name));
+  if (S.sel) want.add(S.sel);
+  const order = nodes.filter(d => want.has(d.n.name))
+    .sort((a,b)=>(b.n.name===S.sel?1e9:Math.abs(b.n.net))-(a.n.name===S.sel?1e9:Math.abs(a.n.net)));
+  const boxes = [];
+  const clash = c => boxes.some(o => c.x < o.x+o.w && c.x+c.w > o.x && c.y < o.y+o.h && c.y+c.h > o.y);
+  for (const {n,q} of order){
+    if (q[2] < 0.04) continue;
+    const s = proj(q);
+    const rad = 1.9 + 4.3*Math.sqrt(Math.abs(n.net)/nmax);
+    const txt = S.sel === n.name ? `${n.name} ${n.net>0?"+":"−"}${fmt(Math.abs(n.net))}` : n.name;
+    const tw = ctx.measureText(txt).width;
+    let box = null;
+    for (const [dx,dy] of [[rad+6,0],[-(rad+6+tw),0],[rad+6,-14],[-(rad+6+tw),-14],[rad+6,14],[-(rad+6+tw),14]]){
+      const c = {x:s[0]+dx-4, y:s[1]+dy-7.5, w:tw+8, h:15};
+      if (c.x < 3 || c.x+c.w > W-3 || c.y < 3 || c.y+c.h > H-3) continue;
+      if (!clash(c)){ box = c; break; }
+    }
+    if (!box) continue;
+    boxes.push(box);
+    ctx.fillStyle = "rgba(7,10,20,.72)";
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.fillStyle = S.sel === n.name ? "#E8ECF8" : "#A6B1CE";
+    ctx.fillText(txt, box.x+4, box.y+7.5);
+  }
+}
+
+let last = 0;
+function loop(ts){
+  if (S.spin && !RM) S.yaw += Math.min(ts-last, 60)*0.000055;
+  last = ts; draw(ts); requestAnimationFrame(loop);
+}
+
+/* ===================== 互動 ===================== */
+let drag = null;
+cvs.addEventListener("pointerdown", e => {
+  cvs.setPointerCapture(e.pointerId);
+  drag = {x:e.clientX, y:e.clientY, yaw:S.yaw, pitch:S.pitch, moved:0};
+});
+cvs.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  drag.moved = Math.max(drag.moved, Math.hypot(dx,dy));
+  S.yaw = drag.yaw + dx*0.006;
+  S.pitch = Math.max(-1.2, Math.min(1.2, drag.pitch + dy*0.006));
+});
+cvs.addEventListener("pointerup", e => {
+  const wasDrag = drag && drag.moved > 5; drag = null;
+  if (wasDrag) return;
+  const r = cvs.getBoundingClientRect();
+  const mx = e.clientX-r.left, my = e.clientY-r.top;
+  let best = null, bd = 1e9;
+  for (const h of hits){
+    if (h.back) continue;
+    const d = Math.hypot(h.x-mx, h.y-my);
+    if (d < h.r+6 && d < bd){ bd = d; best = h.name; }
+  }
+  S.sel = (best && best !== S.sel) ? best : null;
+  paintPanels();
+});
+cvs.addEventListener("pointercancel", ()=>{ drag = null; });
+
+function group(id, key, fn){
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    [...$(id).querySelectorAll("button")].forEach(x=>x.setAttribute("aria-pressed", String(x===b)));
+    fn(b.dataset[key]);
+  });
+}
+group("algoGrp","algo", v=>{ S.algo = v; recompute(); paintPanels(); });
+group("topGrp","top",  v=>{ S.top = v; });
+group("mktGrp","mkt",  v=>{ S.market = v; S.sel = null; useMarket(v); });
+group("winGrp","win",  v=>{
+  const n = parseInt(v, 10);
+  if (n > 1 && !S.hist[S.market]){
+    setMsg(`「${S.market === "tw" ? "台股" : "美股"}」還沒有歷史資料，無法做多日累積。`, false);
+    // 沒有歷史就退回單日，並把按鈕狀態同步回去
+    [...$("winGrp").querySelectorAll("button")]
+      .forEach(x => x.setAttribute("aria-pressed", String(x.dataset.win === "1")));
+    S.win = 1;
+  } else S.win = n;
+  S.sel = null; recompute(); paintPanels();
+});
+$("spinBtn").addEventListener("click", e=>{
+  S.spin = !S.spin; e.currentTarget.setAttribute("aria-pressed", String(S.spin));
+});
+const scrim = $("scrim");
+$("helpBtn").addEventListener("click", ()=>scrim.classList.add("open"));
+$("closeBtn").addEventListener("click", ()=>scrim.classList.remove("open"));
+scrim.addEventListener("click", e=>{ if (e.target === scrim) scrim.classList.remove("open"); });
+document.addEventListener("keydown", e=>{
+  if (e.key === "Escape"){ if (scrim.classList.contains("open")) scrim.classList.remove("open");
+    else if (S.sel){ S.sel = null; paintPanels(); } }
+});
+
+/* ===================== 資料載入 ===================== */
+function setMsg(t,ok){ const m = $("msg"); m.textContent = t; m.className = "msg "+(ok?"ok":"err"); }
+function validate(o){
+  if (!o || !Array.isArray(o.industries)) throw new Error("缺少 industries 陣列");
+  const rows = o.industries.filter(r => r && typeof r.name === "string" && typeof r.net === "number");
+  if (rows.length < 2) throw new Error("至少要有兩筆含 name 與數值 net 的資料");
+  if (!rows.some(r=>r.net>0) || !rows.some(r=>r.net<0)) throw new Error("要同時有正值與負值的 net 才能配對");
+  rows.forEach(r=>{ r.sector = r.sector || "未分類"; r.chg = typeof r.chg === "number" ? r.chg : 0; });
+  return {meta:o.meta||{}, industries:rows};
+}
+function useMarket(m){
+  S.data = S.store[m];
+  if (S.win > 1 && !S.hist[m]){          // 換到沒有歷史的市場就退回單日
+    S.win = 1;
+    [...$("winGrp").querySelectorAll("button")]
+      .forEach(x => x.setAttribute("aria-pressed", String(x.dataset.win === "1")));
+  }
+  syncWinButtons();
+  recompute(); paintPanels();
+}
+function load(o,label){
+  try{
+    const d = validate(o);
+    S.store[S.market] = d; S.live[S.market] = false; S.sel = null;
+    useMarket(S.market);
+    setMsg(`已載入 ${d.industries.length} 個產業到「${S.market==="tw"?"台股":"美股"}」${label?"（"+label+"）":""}`, true);
+    try{ localStorage.setItem("orbit.data."+S.market, JSON.stringify(d)); }catch(_){}
+  }catch(err){ setMsg("載入失敗："+err.message, false); }
+}
+
+/* 同源的即時資料：放在 GitHub Pages 上時 ./data/*.json 抓得到；
+   發布成 artifact 時 CSP 會擋掉 fetch，靜靜失敗、繼續用示範資料就好。 */
+async function pull(m){
+  try{
+    const r = await fetch(`./data/${m}.json?t=${Date.now()}`, {cache:"no-store"});
+    if (!r.ok) return false;
+    const d = validate(await r.json());
+    const before = S.store[m] && S.store[m].meta ? S.store[m].meta.snapshot : null;
+    const after = d.meta ? d.meta.snapshot : null;
+    S.store[m] = d; S.live[m] = true;
+    if (S.market === m && before !== after) useMarket(m);
+    else if (S.market === m) paintPanels();
+    return true;
+  }catch(_){ return false; }
+}
+async function pullHist(m){
+  try{
+    const r = await fetch(`./data/history_${m}.json?t=${Date.now()}`, {cache:"no-store"});
+    if (!r.ok) return false;
+    const h = await r.json();
+    if (!h || !Array.isArray(h.days) || !Array.isArray(h.names) || h.days.length < 2) return false;
+    S.hist[m] = h;
+    if (S.market === m && S.win > 1){ recompute(); paintPanels(); }
+    return true;
+  }catch(_){ return false; }
+}
+async function pullAll(){
+  await Promise.all([pull("tw"), pull("us"), pullHist("tw"), pullHist("us")]);
+  syncWinButtons();
+}
+// 沒有歷史的市場，把多日按鈕標成不可用
+function syncWinButtons(){
+  const has = !!S.hist[S.market];
+  [...$("winGrp").querySelectorAll("button")].forEach(b => {
+    const multi = b.dataset.win !== "1";
+    b.disabled = multi && !has;
+    b.style.opacity = b.disabled ? ".38" : "";
+    b.style.cursor = b.disabled ? "not-allowed" : "";
+    b.title = b.disabled ? "這個市場還沒有歷史資料" : "";
+  });
+}
+$("file").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{ try{ load(JSON.parse(fr.result), f.name); }catch(err){ setMsg("JSON 格式錯誤："+err.message,false); } };
+  fr.onerror = ()=>setMsg("檔案讀取失敗", false);
+  fr.readAsText(f);
+});
+$("applyBtn").addEventListener("click", ()=>{
+  const t = $("paste").value.trim();
+  if (!t) return setMsg("請先貼上 JSON", false);
+  try{ load(JSON.parse(t), "貼上"); }catch(err){ setMsg("JSON 格式錯誤："+err.message, false); }
+});
+$("resetBtn").addEventListener("click", ()=>{
+  try{ localStorage.removeItem("orbit.data."+S.market); }catch(_){}
+  S.store[S.market] = validate(JSON.parse(JSON.stringify(DEMOS[S.market])));
+  S.live[S.market] = false; S.sel = null; useMarket(S.market);
+  setMsg("已還原示範資料", true);
+});
+$("schema").textContent = JSON.stringify({
+  meta:{market:"台股 上市櫃",unit:"億元",snapshot:"2026-09-04 13:30",freq:"收盤後更新"},
+  industries:[{name:"IC設計",sector:"半導體",net:34.17,chg:2.76},
+              {name:"公股金控",sector:"金融",net:-8.71,chg:-0.26}]
+}, null, 1);
+
+/* ===================== 啟動 ===================== */
+for (const m of ["tw","us"]){
+  let saved = null;
+  try{ const raw = localStorage.getItem("orbit.data."+m); if (raw) saved = JSON.parse(raw); }catch(_){}
+  try{ S.store[m] = validate(saved || DEMOS[m]); }catch(_){ S.store[m] = validate(DEMOS[m]); }
+}
+for (const m of ["tw","us"]){
+  const h = DEMO_HIST[m];
+  if (h && Array.isArray(h.days) && h.days.length >= 2) S.hist[m] = h;
+}
+S.data = S.store[S.market];
+buildDecor(); recompute(); resize(); paintPanels(); syncWinButtons();
+requestAnimationFrame(loop);
+// 放在 GitHub Pages 上時會抓到真實資料；發布成 artifact 時 CSP 擋掉 fetch，靜靜失敗即可
+pullAll();
+setInterval(pullAll, 60000);
+if (window.ResizeObserver){
+  let t = null;
+  new ResizeObserver(()=>{ clearTimeout(t); t = setTimeout(resize, 60); }).observe(cvs.parentElement);
+} else window.addEventListener("resize", resize);
+})();
+</script>
+
+</body>
+</html>
